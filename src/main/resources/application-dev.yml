@@ -1,0 +1,70 @@
+server:
+  port: 9999
+spring:
+  application:
+    name: Security
+  level:
+    root: info
+  mvc:
+    static-path-pattern: /**
+#配置bootAdmin地址
+  boot:
+    admin:
+      client:
+        url: http://localhost:8080
+        service-base-url: http://192.168.10.212
+
+mybatis:
+  mapperLocations: classpath:mapper/*.xml
+sdk:
+  hostIp: 192.168.10.212
+  port: 8000
+  token: F3Pv-TNLh
+  url: http://192.168.10.212:8000
+#  hostIp: 192.168.10.132
+#  port: 8000
+#  token: GxSW-JKSD
+  version: v0
+  identifyType: biggest
+  snapGallery: ggggler
+  staticGallery: ggggler1
+  warningThreshold: 0.7
+  snapIdentifyNumber: 10
+  emotionsOpen: false
+  genderOpen: false
+  ageOpen: false
+
+
+
+constant:
+  camera: ${sdk.url}/${sdk.version}/camera
+  serverLabel: ${server.port}-security
+
+camera:
+  allProcess: stream-active
+  rtmpPrefix: rtmp://192.168.10.158:1936/myapp/
+
+
+password:
+  salt: zhaosdafaqj23ou89ZXcj@#$@#$#@KJdjklj;D../dSF.,
+role:
+  user: 0
+  admin: 1
+
+
+# info 配置项（/actuator/info）
+info:
+  author: anytec
+  email: anytec@anytec.cn
+  version: 1.0.0
+
+# 配置 actuator 加载所有的端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+        exclude: ''
+  endpoint:
+    health:
+      show-details: always
