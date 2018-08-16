@@ -104,9 +104,7 @@ public class WSController {
         Map<String,List<String>> mm = wsHandler.getCameraId_sessionIdList_map();
         Map<String,Object> map = new HashMap<>();
         mm.forEach((k,v)->{
-            v.forEach(n->{
-                map.put(k,n);
-            });
+            map.put(k,v.toString());
         });
         return new JSONObject(map).toJSONString();
     }
