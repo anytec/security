@@ -152,6 +152,7 @@ public class CameraStreamMonitor {
         if(camera == null){
             return "error";
         }
+        redisTemplate.opsForSet().add(serverLabel, camera.getSdkId());
         Map<String,String> allProcessLabelmap = redisTemplate.opsForHash().entries(allProcessLabel);
         String count = allProcessLabelmap.get(camera.getSdkId());
         if (count == null) {

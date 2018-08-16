@@ -26,3 +26,6 @@ src/main/resources/static/**
 /dist/
 /nbdist/
 /.nb-gradle/
+### Local ###
+src/main/resources/application.properties
+src/main/resources/application-zzz.yml
