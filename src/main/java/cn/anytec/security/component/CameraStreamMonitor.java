@@ -62,7 +62,7 @@ public class CameraStreamMonitor {
                     FFmpegStreamTask task = streamProcessLocal.get(k);
                     if(task.isAlive()){
                         streamProcessLocal.get(k).destory();
-                        wsSendHandler.sendUnsubscribe(k);
+                        //wsSendHandler.sendUnsubscribe(k);
                     }
                 }
             }
@@ -142,16 +142,17 @@ public class CameraStreamMonitor {
             if(isDestory){
                 redisTemplate.opsForHash().delete(allProcessLabel, cameraId);
                 redisTemplate.opsForSet().remove(serverLabel,cameraId);
-                wsSendHandler.sendUnsubscribe(cameraId);
             }
             return isDestory;
         }
         return false;
     }
+
     public String createViewProcess(TbCamera camera){
         if(camera == null){
             return "error";
         }
+        redisTemplate.opsForSet().add(serverLabel, camera.getSdkId());
         Map<String,String> allProcessLabelmap = redisTemplate.opsForHash().entries(allProcessLabel);
         String count = allProcessLabelmap.get(camera.getSdkId());
         if (count == null) {
@@ -161,40 +162,23 @@ public class CameraStreamMonitor {
             FFmpegStreamTask task = new FFmpegStreamTask(cmds);
             task.setDaemon(true);
             task.start();
+            redisTemplate.opsForHash().put(allProcessLabel, camera.getSdkId(), "1");
+            streamProcessLocal.put(camera.getSdkId(), task);
             try {
-                Thread.sleep(500);
+                for(int i=0 ; i<12 ;i++){
+                    Thread.sleep(500);
+                    if(task.getExistValue() != null && task.getExistValue() == 1){
+                        return "error";
+                    }
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            if(task.isAlive()){
-                redisTemplate.opsForHash().put(allProcessLabel, camera.getSdkId(), "1");
-                streamProcessLocal.put(camera.getSdkId(), task);
-                return "success";
-            }else {
-                return "error";
-            }
+            return "success";
         }else if(Integer.parseInt(count) > 0){
             return "exist";
         }
-        clearProcess();
+        monitorProgress();
         return createViewProcess(camera);
-    }
-
-    private void clearProcess(){
-        HashMap<String, String> monitorMap = (HashMap) redisTemplate.opsForHash().entries(allProcessLabel);
-        //获取本实例跑的进程记录
-        monitorMap.forEach((k,v)->{
-            if(Integer.parseInt(v)<=0){
-                redisTemplate.opsForSet().remove(serverLabel,k);
-                redisTemplate.opsForHash().delete(allProcessLabel,k);
-                logger.info("无回显连接,停止rtmp服务："+k);
-                if(streamProcessLocal.keySet().contains(k)){
-                    FFmpegStreamTask task = streamProcessLocal.get(k);
-                    if(task.isAlive()){
-                        streamProcessLocal.get(k).destory();
-                    }
-                }
-            }
-        });
     }
 }

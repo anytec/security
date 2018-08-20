@@ -179,8 +179,11 @@ public class FindFaceImpl implements FindFaceService {
         }else if(!StringUtils.isEmpty(param.getPhotoUrl())){
             multipartEntityBuilder.addTextBody("photo",param.getPhotoUrl());
         }
-        if (param.getMeta() != null) {
+        if(!StringUtils.isEmpty(param.getMeta())) {
             multipartEntityBuilder.addTextBody("meta",param.getMeta());
+        }
+        if(!StringUtils.isEmpty(param.getBbox())){
+            multipartEntityBuilder.addTextBody("bbox",param.getBbox());
         }
         if(config.isAgeOpen()){
             multipartEntityBuilder. addTextBody("age","1");

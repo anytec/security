@@ -3,8 +3,11 @@ package cn.anytec.security.controller;
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.service.CameraService;
+import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 //@RequestMapping("/camera")
@@ -31,7 +34,10 @@ public class CameraController {
                                @RequestParam(value = "type",required = false)String type,
                                @RequestParam(value = "serverLabel",required = false)String serverLabel,
                                @RequestParam(value = "status",required = false)Integer status){
-        return cameraService.list(pageNum, pageSize, name, groupId, type, serverLabel, status);
+
+        List<TbCamera> cameraList = cameraService.list(pageNum, pageSize, name, groupId, type, serverLabel, status);
+        PageInfo pageResult = new PageInfo(cameraList);
+        return ServerResponse.createBySuccess(pageResult);
     }
 
     @RequestMapping("/camera/update")

@@ -29,11 +29,16 @@ public class WSSendHandler {
         simpMessagingTemplate.convertAndSend("/topic/camera/warning", ServerResponse.createBySuccess("warning",frWarning));
     }
     public void sendPlayStream(EnrollResp enrollResp,String cameraId){
-        simpMessagingTemplate.convertAndSend("/topic/camera/"+cameraId, ServerResponse.createBySuccess("stream",enrollResp));
+        try {
+            Thread.sleep(200);
+            simpMessagingTemplate.convertAndSend("/topic/camera/"+cameraId, ServerResponse.createBySuccess("stream",enrollResp));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
-    public void sendUnsubscribe(String cameraId){
+    /*public void sendUnsubscribe(String cameraId){
         simpMessagingTemplate.convertAndSend("/topic/camera/"+cameraId, ServerResponse.createBySuccess("unsubscribe",cameraId));
-    }
+    }*/
     public void sendSnapshotOfDay(long times){
         simpMessagingTemplate.convertAndSend("/topic/camera/warning",ServerResponse.createBySuccess("snapshotOfDay",times));
     }

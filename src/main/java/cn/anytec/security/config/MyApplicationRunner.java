@@ -3,8 +3,6 @@ package cn.anytec.security.config;
  * 服务器启动时自动执行
  */
 
-
-import cn.anytec.security.cache.RedisService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,8 +13,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.RedisTemplate;
-
-import java.text.SimpleDateFormat;
 import java.util.Set;
 
 
@@ -29,9 +25,6 @@ public class MyApplicationRunner implements ApplicationRunner {
     private RedisTemplate redisTemplate;
     @Value("${constant.serverLabel}")
     private String serverLabel;
-    @Autowired
-    RedisService redisService;
-
     @Value("${camera.allProcess}")
     private String allProcessLabel;
 

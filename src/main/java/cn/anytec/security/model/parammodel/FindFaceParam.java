@@ -12,6 +12,7 @@ public class FindFaceParam {
     private String camid;
     private Integer n;
     private String photoUrl;
+    private String bbox;
 
     public Integer getN() {
         return n;
@@ -83,5 +84,13 @@ public class FindFaceParam {
 
     public void setPhotoUrl(String photoUrl) {
         this.photoUrl = photoUrl;
+    }
+
+    public String getBbox() {
+        return bbox;
+    }
+
+    public void setBbox(String bbox) {
+        this.bbox = bbox;
     }
 }

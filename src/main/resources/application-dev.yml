@@ -6,13 +6,15 @@ spring:
   level:
     root: info
   mvc:
-    static-path-pattern: /**
+    static-path-pattern: /static/**
 #配置bootAdmin地址
   boot:
     admin:
       client:
         url: http://localhost:8080
         service-base-url: http://192.168.10.212
+  resources:
+    static-locations: classpath:/static/
 
 mybatis:
   mapperLocations: classpath:mapper/*.xml
@@ -26,7 +28,7 @@ sdk:
 #  token: GxSW-JKSD
   version: v0
   identifyType: biggest
-  snapGallery: ggggler
+  snapGallery: 158Snap
   staticGallery: ggggler1
   warningThreshold: 0.7
   snapIdentifyNumber: 10
@@ -34,6 +36,11 @@ sdk:
   genderOpen: false
   ageOpen: false
 
+redisKeys:
+  cameraBySdkId: getCameraBySdkId
+  cameraGroupById: getCameraGroupById
+  peronBySdkId: getPersonBySdkId
+  personGroupById: getPersonGroupById
 
 
 constant:

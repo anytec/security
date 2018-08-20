@@ -20,7 +20,7 @@ public class MVCConfiguration implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         //相对路径
-        registry.addResourceHandler("/**").addResourceLocations("classpath:/static/");
+//        registry.addResourceHandler("/**").addResourceLocations("classpath:/static/");
 //        registry.addResourceHandler("/css/**").addResourceLocations("classpath:/static/css/");
 //        registry.addResourceHandler("/img/**").addResourceLocations("classpath:/static/img/");
 //        registry.addResourceHandler("/fonts/**").addResourceLocations("classpath:/static/fonts/");

@@ -30,8 +30,6 @@ public class WSController {
     private WSSendHandler wsSendHandler;
     @Autowired
     RedisTemplate redisTemplate;
-    @Autowired
-    private CameraStreamMonitor cameraStreamMonitor;
 
     private static Logger logger = LoggerFactory.getLogger(WSController.class);
 
@@ -55,6 +53,7 @@ public class WSController {
             wsSendHandler.sendPlayStream(enrollResp,cameraId);
             return;
         }
+        wsSendHandler.sendPlayStream(enrollResp,cameraId);
         if(null != previous && !cameraId.equals(previous) && !previous.equals("")){
             logger.info("remove camera : "+previous+" , sessionId : "+sessionId);
             wsHandler.removeSessionId(previous,sessionId);
@@ -70,7 +69,7 @@ public class WSController {
             return;
         }
         logger.info("正确推送rtmp播放流地址："+cameraId);
-        wsSendHandler.sendPlayStream(enrollResp,cameraId);
+
     }
 
     @EventListener
@@ -98,15 +97,14 @@ public class WSController {
         });
 
     }
+
     @RequestMapping("/ttt")
     @ResponseBody
     public String ttt(){
         Map<String,List<String>> mm = wsHandler.getCameraId_sessionIdList_map();
         Map<String,Object> map = new HashMap<>();
         mm.forEach((k,v)->{
-            v.forEach(n->{
-                map.put(k,n);
-            });
+            map.put(k,v.toString());
         });
         return new JSONObject(map).toJSONString();
     }
