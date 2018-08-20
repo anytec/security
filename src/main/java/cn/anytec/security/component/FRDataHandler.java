@@ -35,7 +35,6 @@ import java.util.*;
 @Component
 public class FRDataHandler {
     private static final Logger logger = LoggerFactory.getLogger(FRDataHandler.class);
-    private static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     @Autowired
     GeneralConfig config;
     @Autowired
@@ -49,11 +48,11 @@ public class FRDataHandler {
     @Autowired
     private WSSendHandler wsSendHandler;
 
-    public void recieveSnap(String cameraId, String timestamp, MultipartFile photo) {
-        TimeModel timeModel = new TimeModel(timestamp, format);
-        List<IdentifyFace> faceList = addFace(photo, cameraId);
+    public void recieveSnap(String cameraSdkId, String timestamp, String bbox, MultipartFile photo) {
+        TimeModel timeModel = new TimeModel(timestamp);
+        List<IdentifyFace> faceList = addFace(photo,cameraSdkId,bbox);
         if (!CollectionUtils.isEmpty(faceList)) {
-            TbCamera camera = cameraService.getCameraBySdkId(cameraId).getData();
+            TbCamera camera = cameraService.getCameraBySdkId(cameraSdkId);
             faceList.forEach(face -> {
                 handleSnapshot(face, timeModel, camera);
                 IdentifyPojo identifyPojo = identifyInStaticGallery(photo);
@@ -65,13 +64,14 @@ public class FRDataHandler {
     }
 
     //快照入sdk动态库
-    public List<IdentifyFace> addFace(MultipartFile face, String cameraId) {
+    public List<IdentifyFace> addFace(MultipartFile photo, String cameraSdkId, String bbox) {
         FindFaceParam params = new FindFaceParam();
-        params.setMeta(cameraId);
+        params.setMeta(cameraSdkId);
+        params.setBbox(bbox);
         String[] galleries = new String[]{config.getSnapGallery()};
         params.setGalleries(galleries);
         try {
-            FacePojo facePojo = findFaceService.addFace(face.getBytes(), params);
+            FacePojo facePojo = findFaceService.addFace(photo.getBytes(), params);
             if (facePojo != null) {
                 return facePojo.getResults();
             } else {
@@ -94,7 +94,8 @@ public class FRDataHandler {
         wsSendHandler.sendSnapShot(snapShot, camera.getSdkId());
         //快照存入mongo
         Map<String, Object> snapshotAddition = insertCameraData(camera);
-        snapshotAddition.put("sdkFaceId", face.getId());
+        snapshotAddition.put("photoUrl",face.getPhoto());
+        snapshotAddition.put("faceSdkId", face.getId());
         snapshotAddition.put("gender",face.getGender());
         String age = face.getAge().toString().split("\\.")[0];
         snapshotAddition.put("age",age);
@@ -108,9 +109,8 @@ public class FRDataHandler {
     public Map<String, Object> insertCameraData(TbCamera camera) {
         Map<String, Object> map = new HashMap<>();
         map.put("cameraId", camera.getId());
-        map.put("cameraName", camera.getName());
+        map.put("cameraSdkId",camera.getSdkId());
         map.put("cameraGroupId", camera.getGroupId());
-        map.put("cameraGroupName", camera.getGroupName());
 //        map.put("location",camera.getLocation());
         map.put("location", returnLocation());
         return map;
@@ -163,11 +163,11 @@ public class FRDataHandler {
 
     //处理预警的快照
     public void handleWarningSnap(IdentifyPojo identifyPojo, IdentifyFace face, TimeModel timeModel, TbCamera camera) {
-        identifyPojo.getResults().forEach((k, v) -> {
-            if (v != null && v.size() > 0) {
+        identifyPojo.getResults().forEach((k, matchFaces) -> {
+            if (!CollectionUtils.isEmpty(matchFaces)) {
                 logger.info("预警警告！ Time：" + timeModel.getCatchTime());
-                MatchFace matchFace = v.get(0);
-                FrWarning warning = new FrWarning(face.getThumbnail(), matchFace.getFace().getThumbnail());
+                MatchFace matchFace = matchFaces.get(0);
+                FrWarning warning = new FrWarning(face.getThumbnail(), matchFace.getFace().getThumbnail(),face.getPhoto());
                 warning.setConfidence(matchFace.getConfidence());
                 warning.setCatchTime(timeModel.getCatchTime());
                 insertCameraData(warning, camera);
@@ -179,7 +179,7 @@ public class FRDataHandler {
                 logger.info("预警记录存入mongo");
                 Map<String, Object> warningMap = new HashMap<>();
                 warningMap.put("timestamp", timeModel.getTimestamp());
-                warningMap.put("sdkFaceId", matchFace.getFace().getId());
+                warningMap.put("faceSdkId", matchFace.getFace().getId());
                 String age = face.getAge().toString().split("\\.")[0];
                 warningMap.put("age",age);
                 warningMap.put("emotions",face.getEmotions());
@@ -202,9 +202,10 @@ public class FRDataHandler {
         if (camera == null)
             return;
         warning.setCameraId(camera.getId());
-        warning.setPersonGroupId(camera.getGroupId());
-        warning.setCameraGroupName(camera.getGroupName());
+        warning.setCameraGroupId(camera.getGroupId());
+        warning.setCameraSdkId(camera.getSdkId());
         warning.setCameraName(camera.getName());
+        warning.setCameraGroupName(camera.getGroupName());
     }
 
     public void insertPersonData(FrWarning warning, MatchFace face) {
@@ -216,6 +217,7 @@ public class FRDataHandler {
             warning.setGender(person.getGender());
             warning.setPersonGroupId(person.getGroupId());
             warning.setPersonGroupName(person.getGroupName());
+            warning.setIdNumber(person.getIdNumber());
         }
     }
 

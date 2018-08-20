@@ -7,10 +7,12 @@ import cn.anytec.security.dao.TbGroupPersonMapper;
 import cn.anytec.security.model.TbGroupPerson;
 import cn.anytec.security.model.TbGroupPersonExample;
 import cn.anytec.security.service.GroupPersonService;
+import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.google.common.base.Splitter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -21,6 +23,10 @@ import java.util.List;
 public class GroupPersonServiceImpl implements GroupPersonService {
     @Autowired
     private TbGroupPersonMapper groupPersonMapper;
+    @Autowired
+    private RedisTemplate redisTemplate;
+    @Autowired
+    private GeneralConfig config;
 
     public ServerResponse add(TbGroupPerson groupPerson) {
         int updateCount = groupPersonMapper.insertSelective(groupPerson);
@@ -44,18 +50,6 @@ public class GroupPersonServiceImpl implements GroupPersonService {
         return ServerResponse.createBySuccess(pageResult);
     }
 
-    @Override
-    public ServerResponse<String> getGroupName(Integer groupId) {
-        TbGroupPersonExample example = new TbGroupPersonExample();
-        TbGroupPersonExample.Criteria c = example.createCriteria();
-        c.andIdEqualTo(groupId);
-        List<TbGroupPerson> personList = groupPersonMapper.selectByExample(example);
-        if(personList.size() > 0){
-            return ServerResponse.createBySuccess(personList.get(0).getName());
-        }
-        return ServerResponse.createByErrorMessage("底库不存在！");
-    }
-
     public ServerResponse delete(String groupPersonIds){
         List<String> groupPersonIdList = Splitter.on(",").splitToList(groupPersonIds);
         for(String personGroupId : groupPersonIdList){
@@ -75,5 +69,24 @@ public class GroupPersonServiceImpl implements GroupPersonService {
             return ServerResponse.createBySuccess("更新groupPerson信息成功", groupPerson);
         }
         return ServerResponse.createByErrorMessage("更新groupPerson信息失败");
+    }
+
+    public ServerResponse<TbGroupPerson> getGroupPersonById(Integer personGroupId) {
+        String redisKey = config.getPersonGroupById();
+        if (redisTemplate.opsForHash().hasKey(redisKey, personGroupId)) {
+            String groupPersonStr= redisTemplate.opsForHash().get(redisKey, personGroupId).toString();
+            TbGroupPerson groupPerson = JSONObject.parseObject(groupPersonStr,TbGroupPerson.class);
+            return ServerResponse.createBySuccess("getGroupPersonById返回成功", groupPerson);
+        }
+        TbGroupPersonExample example = new TbGroupPersonExample();
+        TbGroupPersonExample.Criteria c = example.createCriteria();
+        c.andIdEqualTo(personGroupId);
+        List<TbGroupPerson> groupCameraList = groupPersonMapper.selectByExample(example);
+        if (!CollectionUtils.isEmpty(groupCameraList)) {
+            TbGroupPerson groupPerson = groupCameraList.get(0);
+            redisTemplate.opsForHash().put(redisKey, personGroupId, JSONObject.toJSONString(groupPerson));
+            return ServerResponse.createBySuccess("getGroupPersonById返回成功", groupPerson);
+        }
+        return ServerResponse.createByErrorMessage("getGroupPersonById未查到符合条件的信息");
     }
 }

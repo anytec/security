@@ -11,6 +11,7 @@ import cn.anytec.security.model.TbPersonExample;
 import cn.anytec.security.model.parammodel.FindFaceParam;
 import cn.anytec.security.service.PersonService;
 import cn.anytec.security.model.vo.PersonVo;
+import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.google.common.base.Splitter;
@@ -18,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,6 +35,8 @@ public class PersonServiceImpl implements PersonService {
     private TbPersonMapper personMapper;
     @Autowired
     private FindFaceService findFaceService;
+    @Autowired
+    private RedisTemplate redisTemplate;
     @Autowired
     private GeneralConfig config;
 
@@ -136,14 +140,21 @@ public class PersonServiceImpl implements PersonService {
         }
     }
 
-    @Override
     public ServerResponse<TbPerson> getPersonBySdkId(String sdkId) {
+        String redisKey = config.getPeronBySdkId();
+        if (redisTemplate.opsForHash().hasKey(redisKey, sdkId)) {
+            String personStr = redisTemplate.opsForHash().get(redisKey, sdkId).toString();
+            TbPerson person = JSONObject.parseObject(personStr,TbPerson.class);
+            return ServerResponse.createBySuccess("getPersonBySdkId返回成功", person);
+        }
         TbPersonExample example = new TbPersonExample();
         TbPersonExample.Criteria c = example.createCriteria();
         c.andSdkIdEqualTo(sdkId);
         List<TbPerson> personList = personMapper.selectByExample(example);
         if (!CollectionUtils.isEmpty(personList)) {
-            return ServerResponse.createBySuccess("getPersonBySdkId返回成功", personList.get(0));
+            TbPerson person = personList.get(0);
+            redisTemplate.opsForHash().put(redisKey,sdkId,JSONObject.toJSONString(person));
+            return ServerResponse.createBySuccess("getPersonBySdkId返回成功", person);
         }
         return ServerResponse.createByErrorMessage("getPersonBySdkId未查到符合条件的信息");
     }

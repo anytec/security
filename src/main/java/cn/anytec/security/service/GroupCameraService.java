@@ -12,6 +12,9 @@ public interface GroupCameraService {
     ServerResponse add(TbGroupCamera groupCamera);
     ServerResponse<String> delete(String groupCameraIds);
     ServerResponse update(TbGroupCamera groupCamera);
-    ServerResponse<PageInfo> list(Integer pageNum, Integer pageSize, String groupName);
+    ServerResponse list(Integer pageNum, Integer pageSize, String groupName);
     ServerResponse<Map<String,List<TbCamera>>> getAllCameras();
+    TbGroupCamera getGroupCameraById(String cameraGroupId);
+    List<Integer> getAllCameraGroupId();
+
 }

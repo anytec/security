@@ -6,22 +6,27 @@ public class FrWarning {
 
     private String snapshotUrl;
     private String faceUrl;
+    private String photoUrl;
     private Double confidence;
     private String personName;
     private String gender;
     private Integer age;
     private List<String> emotions;
+    private String idNumber;
     private Integer personGroupId;
     private String personGroupName;
     private Integer cameraId;
+    private Integer cameraGroupId;
+    private String cameraSdkId;
     private String catchTime;
     private String cameraName;
     private String cameraGroupName;
     private Integer warningOfWeek;
 
-    public FrWarning(String snapshotUrl, String faceUrl){
+    public FrWarning(String snapshotUrl, String faceUrl, String photoUrl){
         this.faceUrl = faceUrl;
         this.snapshotUrl = snapshotUrl;
+        this.photoUrl = photoUrl;
     }
 
     public Double getConfidence() {
@@ -112,6 +117,14 @@ public class FrWarning {
         this.cameraId = cameraId;
     }
 
+    public String getCameraSdkId() {
+        return cameraSdkId;
+    }
+
+    public void setCameraSdkId(String cameraSdkId) {
+        this.cameraSdkId = cameraSdkId;
+    }
+
     public Integer getWarningOfWeek() {
         return warningOfWeek;
     }
@@ -126,5 +139,21 @@ public class FrWarning {
 
     public void setEmotions(List<String> emotions) {
         this.emotions = emotions;
+    }
+
+    public Integer getCameraGroupId() {
+        return cameraGroupId;
+    }
+
+    public void setCameraGroupId(Integer cameraGroupId) {
+        this.cameraGroupId = cameraGroupId;
+    }
+
+    public String getIdNumber() {
+        return idNumber;
+    }
+
+    public void setIdNumber(String idNumber) {
+        this.idNumber = idNumber;
     }
 }

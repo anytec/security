@@ -29,10 +29,12 @@ public class MainController {
 
     @PostMapping("/receiveSnap")
     @ResponseBody
-    public void receiveSnap(String cam_id, String timestamp, @RequestParam("face0") MultipartFile face0) {
+    public void receiveSnap(String cam_id, String timestamp, String bbox,
+                            @RequestParam("photo") MultipartFile photo,
+                            @RequestParam("face0") MultipartFile face0) {
         logger.info("invoke_function: { receiveSnap }");
         if (face0 != null) {
-            frDataHandler.recieveSnap(cam_id,timestamp,face0);
+            frDataHandler.recieveSnap(cam_id,timestamp,bbox,photo);
         }else {
             logger.info("recieveSnap接收的人脸图片为空！");
         }
@@ -45,6 +47,6 @@ public class MainController {
         if (resultList != null) {
             return ServerResponse.createBySuccess(resultList);
         }
-        return ServerResponse.createByErrorMessage("identifySnap 发生错误！");
+        return ServerResponse.createByErrorMessage("");
     }
 }

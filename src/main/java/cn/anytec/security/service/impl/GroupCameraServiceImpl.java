@@ -11,10 +11,12 @@ import cn.anytec.security.model.TbGroupCamera;
 import cn.anytec.security.model.TbGroupCameraExample;
 import cn.anytec.security.service.CameraService;
 import cn.anytec.security.service.GroupCameraService;
+import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.google.common.base.Splitter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -30,6 +32,10 @@ public class GroupCameraServiceImpl implements GroupCameraService {
     private TbGroupCameraMapper groupCameraMapper;
     @Autowired
     private TbCameraMapper cameraMapper;
+    @Autowired
+    private RedisTemplate redisTemplate;
+    @Autowired
+    private GeneralConfig config;
 
     public ServerResponse add(TbGroupCamera groupCamera) {
         int updateCount = groupCameraMapper.insertSelective(groupCamera);
@@ -39,7 +45,7 @@ public class GroupCameraServiceImpl implements GroupCameraService {
         return ServerResponse.createByErrorMessage("新增groupCamera失败");
     }
 
-    public ServerResponse<PageInfo> list(Integer pageNum, Integer pageSize, String groupName) {
+    public ServerResponse list(Integer pageNum, Integer pageSize, String groupName) {
         if(pageNum != 0 && pageSize != 0){
             PageHelper.startPage(pageNum, pageSize);
         }
@@ -51,6 +57,17 @@ public class GroupCameraServiceImpl implements GroupCameraService {
         List<TbGroupCamera> cameraList = groupCameraMapper.selectByExample(example);
         PageInfo pageResult = new PageInfo(cameraList);
         return ServerResponse.createBySuccess(pageResult);
+    }
+
+
+    public List<Integer> getAllCameraGroupId() {
+        TbGroupCameraExample example = new TbGroupCameraExample();
+        List<TbGroupCamera> cameraGroupList = groupCameraMapper.selectByExample(example);
+        List<Integer> cameraGroupIdList = new ArrayList<>();
+        for(TbGroupCamera cameraGroup : cameraGroupList){
+            cameraGroupIdList.add(cameraGroup.getId());
+        }
+        return cameraGroupIdList;
     }
 
     public ServerResponse delete(String groupCameraIds){
@@ -96,5 +113,24 @@ public class GroupCameraServiceImpl implements GroupCameraService {
            return ServerResponse.createBySuccess(allCamera);
         }
         return ServerResponse.createByError();
+    }
+
+    public TbGroupCamera getGroupCameraById(String cameraGroupId) {
+        String redisKey = config.getCameraGroupById();
+        if (redisTemplate.opsForHash().hasKey(redisKey, cameraGroupId)) {
+            String cameraGroupStr = redisTemplate.opsForHash().get(redisKey, cameraGroupId).toString();
+            TbGroupCamera groupCamera = JSONObject.parseObject(cameraGroupStr,TbGroupCamera.class);
+            return groupCamera;
+        }
+        TbGroupCameraExample example = new TbGroupCameraExample();
+        TbGroupCameraExample.Criteria c = example.createCriteria();
+        c.andIdEqualTo(Integer.parseInt(cameraGroupId));
+        List<TbGroupCamera> groupCameraList = groupCameraMapper.selectByExample(example);
+        if (!CollectionUtils.isEmpty(groupCameraList)) {
+            TbGroupCamera groupCamera = groupCameraList.get(0);
+            redisTemplate.opsForHash().put(redisKey, cameraGroupId, JSONObject.toJSONString(groupCamera));
+            return groupCamera;
+        }
+        return null;
     }
 }

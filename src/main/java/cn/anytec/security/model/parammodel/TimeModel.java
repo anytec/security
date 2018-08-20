@@ -3,37 +3,28 @@ package cn.anytec.security.model.parammodel;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 public class TimeModel {
-    private String sdkTimeStr;
-    private LocalDateTime localDateTime;
     private long timestamp;
     private String catchTime;
     private int dayOfWeek;
     private int hour;
     private int minute;
-    private SimpleDateFormat format;
+    private static final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-    public TimeModel(String sdkTimeStr, SimpleDateFormat format){
-        this.sdkTimeStr = sdkTimeStr;
-        this.format = format;
+    public TimeModel(String sdkTimeStr){
         LocalDateTime localDateTime = LocalDateTime.parse(sdkTimeStr);
-        this.localDateTime = localDateTime;
-        this.dayOfWeek = localDateTime.getDayOfWeek().getValue();
-        this.hour = localDateTime.getHour();
-        this.minute = localDateTime.getMinute();
-        long timestamp = localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        ZonedDateTime zonedDateTime= ZonedDateTime.of(localDateTime,ZoneId.of("UTC")).withZoneSameInstant(ZoneId.systemDefault());
+        long timestamp = zonedDateTime.toInstant().toEpochMilli();
+
+        this.dayOfWeek = zonedDateTime.getDayOfWeek().getValue();
+        this.hour = zonedDateTime.getHour();
+        this.minute = zonedDateTime.getMinute();
         this.timestamp = timestamp;
         this.catchTime = format.format(timestamp);
     }
 
-    public LocalDateTime getLocalDateTime() {
-        return localDateTime;
-    }
-
-    public void setLocalDateTime(LocalDateTime localDateTime) {
-        this.localDateTime = localDateTime;
-    }
 
     public long getTimestamp() {
         return timestamp;
@@ -51,13 +42,6 @@ public class TimeModel {
         this.catchTime = catchTime;
     }
 
-    public String getSdkTimeStr() {
-        return sdkTimeStr;
-    }
-
-    public void setSdkTimeStr(String sdkTimeStr) {
-        this.sdkTimeStr = sdkTimeStr;
-    }
 
     public int getDayOfWeek() {
         return dayOfWeek;
@@ -69,10 +53,6 @@ public class TimeModel {
 
     public SimpleDateFormat getFormat() {
         return format;
-    }
-
-    public void setFormat(SimpleDateFormat format) {
-        this.format = format;
     }
 
     public int getHour() {

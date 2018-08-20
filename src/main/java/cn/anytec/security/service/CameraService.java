@@ -9,15 +9,13 @@ import java.util.List;
 public interface CameraService {
     ServerResponse add(TbCamera camera);
     ServerResponse<String> delete(String cameraIds);
-    ServerResponse<PageInfo> list(int pageNum, int pageSize, String name, Integer groupId, String type, String serverLabel, Integer status);
+    List<TbCamera> list(int pageNum, int pageSize, String name, Integer groupId, String type, String serverLabel, Integer status);
     ServerResponse update(TbCamera camera);
-    ServerResponse<TbCamera> getCameraBySdkId(String sdkId);
+    TbCamera getCameraBySdkId(String sdkId);
     String cameras();
     String connect(int id);
-
-    //    ServerResponse addCameraConnect(String id);
+//    ServerResponse addCameraConnect(String id);
     ServerResponse deleteCameraConnect(int id);
-
     ServerResponse killCameraProcess(int id);
     ServerResponse<List<String>> getServerLabel();
 }

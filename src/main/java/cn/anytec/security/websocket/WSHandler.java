@@ -62,7 +62,7 @@ public class WSHandler {
 
     String registerCamera(String cameraId,String sessionId){
         String runInfo = null;
-        TbCamera camera = cameraService.getCameraBySdkId(cameraId).getData();
+        TbCamera camera = cameraService.getCameraBySdkId(cameraId);
         if(cameraId_sessionIdList_map.containsKey(cameraId)){
             List<String> sessionIdList = cameraId_sessionIdList_map.get(cameraId);
             if(!sessionIdList.contains(sessionId)){
