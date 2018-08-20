@@ -28,8 +28,8 @@ sdk:
 #  token: GxSW-JKSD
   version: v0
   identifyType: biggest
-  snapGallery: 158Snap
-  staticGallery: ggggler1
+  snapGallery: 126Sanp
+  staticGallery: 126Static
   warningThreshold: 0.7
   snapIdentifyNumber: 10
   emotionsOpen: false

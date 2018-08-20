@@ -16,14 +16,35 @@ public class DataController {
 
     @Autowired
     private MongoDBService mongoDBService;
-    
-    @RequestMapping("/getPersonCount")
+
+    @RequestMapping("/sanpCounting")
     @ResponseBody
-    public ServerResponse getPersonCount(HttpServletRequest request){
-        JSONObject result = mongoDBService.getPersonCount(request.getParameterMap());
+    public ServerResponse sanpCounting(){
+        JSONObject result = mongoDBService.sanpCounting();
         if(result != null){
             return ServerResponse.createBySuccess(result);
         }
-        return ServerResponse.createByErrorMessage("查询mongo snapshot发生错误！");
+        return ServerResponse.createByErrorMessage("sanpCounting发生错误！");
+    }
+
+    //改peopleCounting
+    @RequestMapping("/getPersonCount")
+    @ResponseBody
+    public ServerResponse peopleCounting(HttpServletRequest request){
+        JSONObject result = mongoDBService.peopleCounting(request.getParameterMap());
+        if(result != null){
+            return ServerResponse.createBySuccess(result);
+        }
+        return ServerResponse.createByErrorMessage("peopleCounting发生错误！");
+    }
+
+    @RequestMapping("/peopleAnalysis")
+    @ResponseBody
+    public ServerResponse peopleAnalysis(HttpServletRequest request){
+        JSONObject result = mongoDBService.peopleAnalysis(request.getParameterMap());
+        if(result != null){
+            return ServerResponse.createBySuccess(result);
+        }
+        return ServerResponse.createByErrorMessage("peopleAnalysis发生错误！");
     }
 }

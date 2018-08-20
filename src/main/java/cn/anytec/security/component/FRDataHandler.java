@@ -55,7 +55,7 @@ public class FRDataHandler {
             TbCamera camera = cameraService.getCameraBySdkId(cameraSdkId);
             faceList.forEach(face -> {
                 handleSnapshot(face, timeModel, camera);
-                IdentifyPojo identifyPojo = identifyInStaticGallery(photo);
+                IdentifyPojo identifyPojo = identifyInStaticGallery(face.getThumbnail());
                 if (identifyPojo != null) {
                     handleWarningSnap(identifyPojo,face, timeModel, camera);
                 }
@@ -89,17 +89,21 @@ public class FRDataHandler {
         logger.info("快照获取：" + catchTime);
         //快照推送
         FdSnapShot snapShot = new FdSnapShot();
+        List<String> emotions = face.getEmotions();
         snapShot.setCatchTime(catchTime);
         snapShot.setSnapshotUrl(face.getThumbnail());
+        snapShot.setCameraName(camera.getName());
+        snapShot.setEmotions(emotions);
+        snapShot.setGender(face.getGender());
+        snapShot.setFaceSdkId(face.getId());
         wsSendHandler.sendSnapShot(snapShot, camera.getSdkId());
         //快照存入mongo
         Map<String, Object> snapshotAddition = insertCameraData(camera);
+        snapshotAddition.put("firstEmotion",emotions.get(0));
+        snapshotAddition.put("secondEmotion",emotions.get(1));
         snapshotAddition.put("photoUrl",face.getPhoto());
-        snapshotAddition.put("faceSdkId", face.getId());
-        snapshotAddition.put("gender",face.getGender());
-        String age = face.getAge().toString().split("\\.")[0];
+        Integer age = Integer.parseInt(face.getAge().toString().split("\\.")[0]);
         snapshotAddition.put("age",age);
-        snapshotAddition.put("emotions",face.getEmotions());
         snapshotAddition.put("timestamp", timeModel.getTimestamp());
         mongoDBService.addSnapShot(JSONObject.toJSONString(snapShot), snapshotAddition);
         //今日抓拍数推送
@@ -148,16 +152,13 @@ public class FRDataHandler {
     }
 
     //在静态库中identify
-    public IdentifyPojo identifyInStaticGallery(MultipartFile photo) {
+    public IdentifyPojo identifyInStaticGallery(String faceUrl) {
         IdentifyPojo identifyPojo = null;
         FindFaceParam param = new FindFaceParam();
         param.setThreshold(config.getWarningThreshold());
         param.setGalleries(new String[]{config.getStaticGallery()});
-        try {
-            identifyPojo = findFaceService.imageIdentify(photo.getBytes(), param);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        param.setPhotoUrl(faceUrl);
+        identifyPojo = findFaceService.imageIdentify(null, param);
         return identifyPojo;
     }
 

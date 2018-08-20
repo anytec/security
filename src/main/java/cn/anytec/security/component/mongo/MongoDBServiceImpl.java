@@ -86,6 +86,12 @@ public class MongoDBServiceImpl implements MongoDBService {
         }
         //cameraSdkId条件
         insertCameraQuery(paramMap,dbObject);
+        if (paramMap.containsKey("faceSdkId")) {
+            String faceSdkId = paramMap.get("faceSdkId")[0];
+            if (!StringUtils.isEmpty(faceSdkId)) {
+                dbObject.put("faceSdkId", faceSdkId);
+            }
+        }
         List<JSONObject> dataList = getResultJson(snapshotCollection.find(dbObject).skip(pageNum * pageSize).limit(pageSize).sort(new BasicDBObject("timestamp", -1)));
         insertCameraData(dataList);
         Integer count = Integer.parseInt(snapshotCollection.count(dbObject) + "");
@@ -256,8 +262,17 @@ public class MongoDBServiceImpl implements MongoDBService {
         return result;
     }
 
+    public JSONObject sanpCounting(){
+        JSONObject result = new JSONObject();
+        Integer snapCount = Integer.parseInt(snapshotCollection.count() + "");
+        Integer warningCount = Integer.parseInt(warningFaceCollection.count() + "");
+        result.put("snapCount",snapCount);
+        result.put("warningCount",warningCount);
+        return result;
+    }
 
-    public JSONObject getPersonCount(Map<String, String[]> paramMap) {
+
+    public JSONObject peopleCounting(Map<String, String[]> paramMap) {
         Map<String, Map<String, List<BasicDBObject>>> dayCameraTimeMap = getDayCameraTimeMap(paramMap);
         JSONObject result = new JSONObject();
         dayCameraTimeMap.forEach((day, value) -> {
@@ -291,7 +306,7 @@ public class MongoDBServiceImpl implements MongoDBService {
             Map<String, List<BasicDBObject>> cameraTimeDbObjectMap = new HashMap<>();
             if(cameraGroupList.size() > 0){
                 cameraTimeDbObjectMap = getCameraGroupTimeMap(cameraGroupList,paramMap,day);
-            }else {
+            }else if(cameraList.size() > 0){
                 cameraTimeDbObjectMap = getCameraTimeMap(cameraList,paramMap,day);
             }
             dayCameraTimeMap.put(day, cameraTimeDbObjectMap);
@@ -299,7 +314,7 @@ public class MongoDBServiceImpl implements MongoDBService {
         return dayCameraTimeMap;
     }
 
-    public List<String> getPastWeek() {
+    private List<String> getPastWeek() {
         List<String> dayList = new ArrayList<>();
         Calendar calendar = Calendar.getInstance();
         for (int i = 0; i < 7; i++) {
@@ -388,6 +403,87 @@ public class MongoDBServiceImpl implements MongoDBService {
         return dayObjectList;
     }
 
+    public JSONObject peopleAnalysis(Map<String, String[]> paramMap) {
+        JSONObject result = new JSONObject();
+        result.put("age",getAgeAnalysis(paramMap));
+        result.put("gender",getGenderAnalysis(paramMap));
+        result.put("emotions",getEmotionAnalysis(paramMap));
+        return result;
+    }
+
+    private BasicDBObject getAnalysisDbObject(Map<String, String[]> paramMap){
+        BasicDBObject dbObject = getTimeDBObject(paramMap);
+        BasicDBList cameraGroupIdDbList = new BasicDBList();
+        BasicDBList cameraSdkIdDbList = new BasicDBList();
+        if (paramMap.containsKey("cameraGroupIds")) {
+            String cameraGroupIds = paramMap.get("cameraGroupIds")[0];
+            String[] groupIds = cameraGroupIds.split(",");
+            for(String groupId : groupIds){
+                cameraGroupIdDbList.add(Integer.parseInt(groupId));
+            }
+        }
+        if (paramMap.containsKey("cameraSdkIds")) {
+            String cameraSdkIds = paramMap.get("cameraSdkIds")[0];
+            String[] sdkIds = cameraSdkIds.split(",");
+            for(String cameraSdkId : sdkIds){
+                cameraSdkIdDbList.add(cameraSdkId);
+            }
+        }
+        if(cameraGroupIdDbList.size() > 0){
+            dbObject.put("cameraGroupId", new BasicDBObject("$in", cameraGroupIdDbList));
+        }else if(cameraSdkIdDbList.size() > 0){
+            dbObject.put("cameraSdkId", new BasicDBObject("$in", cameraSdkIdDbList));
+        }
+        return dbObject;
+    }
+
+
+    private Map<String,Integer> getAgeAnalysis(Map<String, String[]> paramMap){
+        BasicDBObject basicDBObject = getAnalysisDbObject(paramMap);
+        Map<String,Integer> ageMap = new HashMap<>();
+        Integer[] ages = {0,10,20,30,40,50,60,70,80,90};
+        for(int i=0; i<ages.length-2; i++){
+            BasicDBObject dbObject = basicDBObject;
+            dbObject.put("age", new BasicDBObject().
+                    append("$gte", ages[i]).
+                    append("$lte", ages[i+1]));
+            Integer count = Integer.parseInt(snapshotCollection.count(dbObject)+"");
+            String key = ages[i]+" ~ "+ages[i+1];
+            ageMap.put(key,count);
+        }
+        return ageMap;
+    }
+
+    private Map<String,Integer> getGenderAnalysis(Map<String, String[]> paramMap){
+        BasicDBObject basicDBObject = getAnalysisDbObject(paramMap);
+        Map<String,Integer> genderMap = new HashMap<>();
+            String[] genders = {"male","female"};
+            for(String gender : genders) {
+                BasicDBObject dbObject = basicDBObject;
+                dbObject.put("gender",gender);
+                Integer count = Integer.parseInt(snapshotCollection.count(dbObject)+"");
+                genderMap.put(gender,count);
+            }
+        return genderMap;
+    }
+
+    private Map<String,String> getEmotionAnalysis(Map<String, String[]> paramMap){
+        BasicDBObject firstObj = getAnalysisDbObject(paramMap);
+        BasicDBObject secondObj = getAnalysisDbObject(paramMap);
+        Map<String,String> emotionMap = new HashMap<>();
+        String[] emotions = {"neutral","sad","happy","surprise","fear","angry","disgust"};
+        for(String emotion : emotions){
+            BasicDBObject firstEmotion = firstObj;
+            BasicDBObject secondEmotion = secondObj;
+            firstEmotion.put("firstEmotion",emotion);
+            secondEmotion.put("secondEmotion",emotion);
+            Integer firstEmotinCount = Integer.parseInt(snapshotCollection.count(firstEmotion)+"");
+            Integer secondEmotinCount = Integer.parseInt(snapshotCollection.count(secondEmotion)+"");
+            emotionMap.put(emotion,firstEmotinCount+","+secondEmotinCount);
+        }
+        return emotionMap;
+    }
+
     @Override
     public long getNumberOfWarningByTime(Long start_timestamp, Long end_timestamp) {
 
@@ -421,7 +517,7 @@ public class MongoDBServiceImpl implements MongoDBService {
         return getTimestampDBObject(start, end);
     }
 
-    public BasicDBObject putCameraCondition(Map<String, String[]> paramMap, BasicDBObject dbObject) {
+    private BasicDBObject putCameraCondition(Map<String, String[]> paramMap, BasicDBObject dbObject) {
         //cameraGroup条件
         if (paramMap.containsKey("cameraGroupId")) {
             Integer cameraGroupId = 0;

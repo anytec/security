@@ -18,8 +18,12 @@ public interface MongoDBService {
     JSONObject getWarningFaceList(Map<String, String[]> paramMap);
 
     JSONObject identifySnap(Map<String,String> sdkMap, IdenfitySnapParam idenfitySnapParam);
+
+    JSONObject sanpCounting();
     
-    JSONObject getPersonCount(Map<String, String[]> paramMap);
+    JSONObject peopleCounting(Map<String, String[]> paramMap);
+
+    JSONObject peopleAnalysis(Map<String, String[]> paramMap);
 
     long getNumberOfWarningByTime(Long start_timestamp,Long end_timestamp);
 
