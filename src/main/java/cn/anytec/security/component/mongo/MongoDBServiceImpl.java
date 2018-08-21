@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -299,7 +300,7 @@ public class MongoDBServiceImpl implements MongoDBService {
     //按日期,设备,mongo时间查询条件封装好的map
     private Map<String, Map<String, List<BasicDBObject>>> getDayCameraTimeMap(Map<String, String[]> paramMap){
         Map<String, Map<String, List<BasicDBObject>>> dayCameraTimeMap = new HashMap<>();
-        List<String> dayList = getPastWeek();
+        List<String> dayList = getPastWeek(paramMap);
         List<TbGroupCamera> cameraGroupList = getCameraGroupList(paramMap);
         List<TbCamera> cameraList = getCameraList(paramMap);
         for (String day : dayList) {
@@ -314,9 +315,15 @@ public class MongoDBServiceImpl implements MongoDBService {
         return dayCameraTimeMap;
     }
 
-    private List<String> getPastWeek() {
+    private List<String> getPastWeek(Map<String, String[]> paramMap) {
         List<String> dayList = new ArrayList<>();
         Calendar calendar = Calendar.getInstance();
+        if(paramMap.containsKey("date")){
+            String dateStr = paramMap.get("date")[0];
+            ParsePosition pos = new ParsePosition(0);
+            Date date = format.parse(dateStr,pos);
+            calendar.setTime(date);
+        }
         for (int i = 0; i < 7; i++) {
             if(i != 0){
                 calendar.add(Calendar.DATE, -1);
@@ -438,18 +445,26 @@ public class MongoDBServiceImpl implements MongoDBService {
     }
 
 
-    private Map<String,Integer> getAgeAnalysis(Map<String, String[]> paramMap){
+    private Map<String,List<Integer>> getAgeAnalysis(Map<String, String[]> paramMap){
         BasicDBObject basicDBObject = getAnalysisDbObject(paramMap);
-        Map<String,Integer> ageMap = new HashMap<>();
+        Map<String,List<Integer>> ageMap = new HashMap<>();
         Integer[] ages = {0,10,20,30,40,50,60,70,80,90};
         for(int i=0; i<ages.length-2; i++){
             BasicDBObject dbObject = basicDBObject;
             dbObject.put("age", new BasicDBObject().
                     append("$gte", ages[i]).
                     append("$lte", ages[i+1]));
-            Integer count = Integer.parseInt(snapshotCollection.count(dbObject)+"");
+            dbObject.put("gender","male");
+            Integer maleCount = Integer.parseInt(snapshotCollection.count(dbObject)+"");
+            dbObject.put("gender","female");
+            Integer femaleCount = Integer.parseInt(snapshotCollection.count(dbObject)+"");
+            Integer total = maleCount + femaleCount;
+            List<Integer> countList = new ArrayList<>();
+            countList.add(maleCount);
+            countList.add(femaleCount);
+            countList.add(total);
             String key = ages[i]+" ~ "+ages[i+1];
-            ageMap.put(key,count);
+            ageMap.put(key,countList);
         }
         return ageMap;
     }

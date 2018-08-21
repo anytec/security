@@ -28,7 +28,7 @@ public class DataController {
     }
 
     //改peopleCounting
-    @RequestMapping("/getPersonCount")
+    @RequestMapping("/peopleCounting")
     @ResponseBody
     public ServerResponse peopleCounting(HttpServletRequest request){
         JSONObject result = mongoDBService.peopleCounting(request.getParameterMap());

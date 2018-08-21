@@ -99,8 +99,10 @@ public class FRDataHandler {
         wsSendHandler.sendSnapShot(snapShot, camera.getSdkId());
         //快照存入mongo
         Map<String, Object> snapshotAddition = insertCameraData(camera);
-        snapshotAddition.put("firstEmotion",emotions.get(0));
-        snapshotAddition.put("secondEmotion",emotions.get(1));
+        if(!CollectionUtils.isEmpty(emotions)){
+            snapshotAddition.put("firstEmotion",emotions.get(0));
+            snapshotAddition.put("secondEmotion",emotions.get(1));
+        }
         snapshotAddition.put("photoUrl",face.getPhoto());
         Integer age = Integer.parseInt(face.getAge().toString().split("\\.")[0]);
         snapshotAddition.put("age",age);
