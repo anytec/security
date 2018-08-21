@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.anytec.security.dao.OperationLogMapper" >
+    
+    <sql id="list_sql">
+        l.id, logtype, logname, u.username, classname, method, createtime, message
+    </sql>
+
+    <insert id="insertLog">
+        INSERT INTO operationlog
+        VALUES
+            (
+                NULL,
+                #{log.logtype},
+                #{log.logname},
+                #{log.userid},
+                #{log.classname},
+                #{log.method},
+                #{log.createtime},
+                #{log.succeed},
+                #{log.message}
+            )
+    </insert>
+
+    <select id="list" resultType="cn.anytec.security.model.vo.OperationLogVO">
+        SELECT
+          <include refid="list_sql"/>
+        FROM
+          operationlog l,
+          tb_user u
+        WHERE
+          l.userid = u.id
+        <if test="firstTime != null and firstTime != ''">
+            AND l.createtime <![CDATA[ >= ]]> #{firstTime}
+        </if>
+        <if test="lastTime != null and lastTime != ''">
+          AND l.createtime <![CDATA[ <= ]]> #{lastTime}
+        </if>
+        <if test="logName != null and logName != ''">
+          AND l.logname LIKE concat('%', #{logName}, '%')
+        </if>
+        <if test="logType != null and logType != ''">
+          AND l.logtype = #{logType}
+        </if>
+    </select>
+</mapper>
