@@ -20,12 +20,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-<<<<<<< HEAD
-import java.text.ParsePosition;
-=======
 import javax.annotation.PostConstruct;
->>>>>>> upstream/master
+import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
