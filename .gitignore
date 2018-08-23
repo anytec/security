@@ -2,6 +2,8 @@
 !.mvn/wrapper/maven-wrapper.jar
 rebel.xml
 
+# 本地化配置文件
+
 #前台静态文件独立出来处理
 src/main/resources/static/**
 

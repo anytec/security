@@ -3,9 +3,14 @@
 <mapper namespace="cn.anytec.security.dao.TbUserMapper" >
   <resultMap id="BaseResultMap" type="cn.anytec.security.model.TbUser" >
     <id column="id" property="id" jdbcType="INTEGER" />
-    <result column="username" property="username" jdbcType="VARCHAR" />
-    <result column="password" property="password" jdbcType="VARCHAR" />
+    <result column="avatar" property="avatar" jdbcType="VARCHAR" />
+    <result column="accent" property="accent" jdbcType="VARCHAR" />
+    <result column="uname" property="uname" jdbcType="VARCHAR" />
+    <result column="upass" property="upass" jdbcType="VARCHAR" />
+    <result column="contact" property="contact" jdbcType="VARCHAR" />
     <result column="role" property="role" jdbcType="INTEGER" />
+    <result column="status" property="status" jdbcType="INTEGER" />
+    <result column="notes" property="notes" jdbcType="VARCHAR" />
   </resultMap>
   <sql id="Example_Where_Clause" >
     <where >
@@ -66,7 +71,7 @@
     </where>
   </sql>
   <sql id="Base_Column_List" >
-    id, username, password, role
+    id, avatar, accent, uname, upass, contact, role, status, notes
   </sql>
   <select id="selectByExample" resultMap="BaseResultMap" parameterType="cn.anytec.security.model.TbUserExample" >
     select
@@ -99,10 +104,14 @@
     </if>
   </delete>
   <insert id="insert" parameterType="cn.anytec.security.model.TbUser" >
-    insert into tb_user (id, username, password, 
-      role)
-    values (#{id,jdbcType=INTEGER}, #{username,jdbcType=VARCHAR}, #{password,jdbcType=VARCHAR}, 
-      #{role,jdbcType=INTEGER})
+    insert into tb_user (id, avatar, accent, 
+      uname, upass, contact, 
+      role, status, notes
+      )
+    values (#{id,jdbcType=INTEGER}, #{avatar,jdbcType=VARCHAR}, #{accent,jdbcType=VARCHAR}, 
+      #{uname,jdbcType=VARCHAR}, #{upass,jdbcType=VARCHAR}, #{contact,jdbcType=VARCHAR}, 
+      #{role,jdbcType=INTEGER}, #{status,jdbcType=INTEGER}, #{notes,jdbcType=VARCHAR}
+      )
   </insert>
   <insert id="insertSelective" parameterType="cn.anytec.security.model.TbUser" >
     insert into tb_user
@@ -110,28 +119,58 @@
       <if test="id != null" >
         id,
       </if>
-      <if test="username != null" >
-        username,
+      <if test="avatar != null" >
+        avatar,
       </if>
-      <if test="password != null" >
-        password,
+      <if test="accent != null" >
+        accent,
+      </if>
+      <if test="uname != null" >
+        uname,
+      </if>
+      <if test="upass != null" >
+        upass,
+      </if>
+      <if test="contact != null" >
+        contact,
       </if>
       <if test="role != null" >
         role,
+      </if>
+      <if test="status != null" >
+        status,
+      </if>
+      <if test="notes != null" >
+        notes,
       </if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides="," >
       <if test="id != null" >
         #{id,jdbcType=INTEGER},
       </if>
-      <if test="username != null" >
-        #{username,jdbcType=VARCHAR},
+      <if test="avatar != null" >
+        #{avatar,jdbcType=VARCHAR},
       </if>
-      <if test="password != null" >
-        #{password,jdbcType=VARCHAR},
+      <if test="accent != null" >
+        #{accent,jdbcType=VARCHAR},
+      </if>
+      <if test="uname != null" >
+        #{uname,jdbcType=VARCHAR},
+      </if>
+      <if test="upass != null" >
+        #{upass,jdbcType=VARCHAR},
+      </if>
+      <if test="contact != null" >
+        #{contact,jdbcType=VARCHAR},
       </if>
       <if test="role != null" >
         #{role,jdbcType=INTEGER},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="notes != null" >
+        #{notes,jdbcType=VARCHAR},
       </if>
     </trim>
   </insert>
@@ -147,14 +186,29 @@
       <if test="record.id != null" >
         id = #{record.id,jdbcType=INTEGER},
       </if>
-      <if test="record.username != null" >
-        username = #{record.username,jdbcType=VARCHAR},
+      <if test="record.avatar != null" >
+        avatar = #{record.avatar,jdbcType=VARCHAR},
       </if>
-      <if test="record.password != null" >
-        password = #{record.password,jdbcType=VARCHAR},
+      <if test="record.accent != null" >
+        accent = #{record.accent,jdbcType=VARCHAR},
+      </if>
+      <if test="record.uname != null" >
+        uname = #{record.uname,jdbcType=VARCHAR},
+      </if>
+      <if test="record.upass != null" >
+        upass = #{record.upass,jdbcType=VARCHAR},
+      </if>
+      <if test="record.contact != null" >
+        contact = #{record.contact,jdbcType=VARCHAR},
       </if>
       <if test="record.role != null" >
         role = #{record.role,jdbcType=INTEGER},
+      </if>
+      <if test="record.status != null" >
+        status = #{record.status,jdbcType=INTEGER},
+      </if>
+      <if test="record.notes != null" >
+        notes = #{record.notes,jdbcType=VARCHAR},
       </if>
     </set>
     <if test="_parameter != null" >
@@ -164,9 +218,14 @@
   <update id="updateByExample" parameterType="map" >
     update tb_user
     set id = #{record.id,jdbcType=INTEGER},
-      username = #{record.username,jdbcType=VARCHAR},
-      password = #{record.password,jdbcType=VARCHAR},
-      role = #{record.role,jdbcType=INTEGER}
+      avatar = #{record.avatar,jdbcType=VARCHAR},
+      accent = #{record.accent,jdbcType=VARCHAR},
+      uname = #{record.uname,jdbcType=VARCHAR},
+      upass = #{record.upass,jdbcType=VARCHAR},
+      contact = #{record.contact,jdbcType=VARCHAR},
+      role = #{record.role,jdbcType=INTEGER},
+      status = #{record.status,jdbcType=INTEGER},
+      notes = #{record.notes,jdbcType=VARCHAR}
     <if test="_parameter != null" >
       <include refid="Update_By_Example_Where_Clause" />
     </if>
@@ -174,23 +233,43 @@
   <update id="updateByPrimaryKeySelective" parameterType="cn.anytec.security.model.TbUser" >
     update tb_user
     <set >
-      <if test="username != null" >
-        username = #{username,jdbcType=VARCHAR},
+      <if test="avatar != null" >
+        avatar = #{avatar,jdbcType=VARCHAR},
       </if>
-      <if test="password != null" >
-        password = #{password,jdbcType=VARCHAR},
+      <if test="accent != null" >
+        accent = #{accent,jdbcType=VARCHAR},
+      </if>
+      <if test="uname != null" >
+        uname = #{uname,jdbcType=VARCHAR},
+      </if>
+      <if test="upass != null" >
+        upass = #{upass,jdbcType=VARCHAR},
+      </if>
+      <if test="contact != null" >
+        contact = #{contact,jdbcType=VARCHAR},
       </if>
       <if test="role != null" >
         role = #{role,jdbcType=INTEGER},
+      </if>
+      <if test="status != null" >
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="notes != null" >
+        notes = #{notes,jdbcType=VARCHAR},
       </if>
     </set>
     where id = #{id,jdbcType=INTEGER}
   </update>
   <update id="updateByPrimaryKey" parameterType="cn.anytec.security.model.TbUser" >
     update tb_user
-    set username = #{username,jdbcType=VARCHAR},
-      password = #{password,jdbcType=VARCHAR},
-      role = #{role,jdbcType=INTEGER}
+    set avatar = #{avatar,jdbcType=VARCHAR},
+      accent = #{accent,jdbcType=VARCHAR},
+      uname = #{uname,jdbcType=VARCHAR},
+      upass = #{upass,jdbcType=VARCHAR},
+      contact = #{contact,jdbcType=VARCHAR},
+      role = #{role,jdbcType=INTEGER},
+      status = #{status,jdbcType=INTEGER},
+      notes = #{notes,jdbcType=VARCHAR}
     where id = #{id,jdbcType=INTEGER}
   </update>
 </mapper>

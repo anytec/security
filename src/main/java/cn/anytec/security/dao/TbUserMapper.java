@@ -4,7 +4,9 @@ import cn.anytec.security.model.TbUser;
 import cn.anytec.security.model.TbUserExample;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface TbUserMapper {
     int countByExample(TbUserExample example);
 

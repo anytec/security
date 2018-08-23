@@ -25,6 +25,12 @@ public enum SecurityExceptionEnum {
     NOT_FOUND(404, "资源未找到"),
 
     /**
+     * 权限不足
+     */
+    INSUFFICIENT_PERMISSIONS(403, "权限不足"),
+    UNAUTHORIZED(401, "未登录"),
+
+    /**
      * 其他
      */
     WRITE_ERROR(500,"渲染界面错误");
