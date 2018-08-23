@@ -6,7 +6,6 @@ import cn.anytec.security.model.TbGroupCamera;
 import cn.anytec.security.model.parammodel.IdenfitySnapParam;
 import cn.anytec.security.service.CameraService;
 import cn.anytec.security.service.GroupCameraService;
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -19,9 +18,10 @@ import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
+import javax.annotation.PostConstruct;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -36,16 +36,34 @@ public class MongoDBServiceImpl implements MongoDBService {
     private GroupCameraService groupCameraService;
 
     private static final Logger logger = LoggerFactory.getLogger(MongoDBServiceImpl.class);
-    private final MongoClient mongoClient = new MongoClient("127.0.0.1");
-    private final MongoDatabase database = mongoClient.getDatabase("security");
-    private final MongoCollection<Document> snapshotCollection = database.getCollection("snapshot");
-    private final MongoCollection<Document> warningFaceCollection = database.getCollection("warning_face");
+
+    @Value("${mongo.host}")
+    private String host;
+    @Value("${mongo.databaseNames}")
+    private String databaseName;
+    @Value("${mongo.snapshotCollection}")
+    private String configSnapshot;
+    @Value("${mongo.warningFaceCollection}")
+    private String configWarning_face;
+
+    private  MongoClient mongoClient;
+    private  MongoDatabase database;
+    private  MongoCollection<Document> snapshotCollection;
+    private  MongoCollection<Document> warningFaceCollection;
+
     private SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 
     public MongoDBServiceImpl() {
         logger.info("======= 初始化MongoDB =======");
     }
 
+    @PostConstruct
+    public void init(){
+        mongoClient = new MongoClient(host);
+        database = mongoClient.getDatabase(databaseName);
+        snapshotCollection = database.getCollection(configSnapshot);
+        warningFaceCollection = database.getCollection(configWarning_face);
+    }
     //快照入库
     @Override
     public void addSnapShot(String json, Map<String, Object> map) {
