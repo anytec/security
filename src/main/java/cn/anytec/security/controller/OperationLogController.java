@@ -29,8 +29,6 @@ public class OperationLogController {
 
         List<OperationLogVO> logs = logService.list(firstTime, lastTime, logName, logType);
 
-        System.out.println("world");
-
         return ServerResponse.createBySuccess(logs);
     }
 

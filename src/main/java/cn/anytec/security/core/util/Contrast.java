@@ -1,5 +1,8 @@
 package cn.anytec.security.core.util;
 
+import cn.anytec.security.config.GeneralConfig;
+import org.apache.commons.lang3.StringUtils;
+
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
@@ -83,6 +86,9 @@ public class Contrast {
     public static String parseMutiKey(String key, HashMap<String, String> req) {
 
         StringBuilder sb = new StringBuilder(4);
+        if (StringUtils.isBlank(key)) {
+            return null;
+        }
         if (key.indexOf(",") != -1){
             String[] keys = key.split(",");
             for (String ky : keys) {
@@ -97,6 +103,21 @@ public class Contrast {
             sb.append(key).append(" = ").append(value);
             return sb.toString();
         }
+    }
+
+    /**
+     * 转换权限
+     * @param role
+     * @return
+     */
+    public static String parseRole(int role) {
+        GeneralConfig config = ApplicationContextHolder.getBean(GeneralConfig.class);
+        if (role == config.getUserRole()) {
+            return "用户";
+        }else if (role == config.getAdminRole()) {
+            return "管理员";
+        }
+        return "";
     }
 
 }

@@ -10,6 +10,7 @@ public enum LogType {
     LOGIN_FAIL("登录失败日志"),
     EXIT("退出日志"),
     EXCEPTION("异常日志"),
+    PERMISSION("权限日志"),
     BUSSINESS("业务日志");
 
     String message;

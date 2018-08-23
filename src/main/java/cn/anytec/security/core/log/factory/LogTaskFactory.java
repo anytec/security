@@ -2,6 +2,7 @@ package cn.anytec.security.core.log.factory;
 
 import cn.anytec.security.core.enums.LogStatus;
 import cn.anytec.security.core.enums.LogType;
+import cn.anytec.security.core.enums.SecurityExceptionEnum;
 import cn.anytec.security.dao.OperationLogMapper;
 import cn.anytec.security.model.OperationLog;
 import org.slf4j.Logger;
@@ -101,6 +102,36 @@ public class LogTaskFactory {
                 operationLog.setClassname(clazzName);
                 operationLog.setMethod(methodName);
                 operationLog.setMessage(errorMsg);
+
+                try {
+                    logMapper.insertLog(operationLog);
+                }catch (Exception e){
+                    log.error("记录异常日志失败");
+                }
+            }
+        };
+    }
+
+    /**
+     * 权限相关日志
+     */
+    public static TimerTask permissionLog(Integer userId, String permissionName,
+                                         String clazzName, String methodName) {
+        return new TimerTask() {
+
+            @Override
+            public void run() {
+
+                OperationLog operationLog = new OperationLog();
+                operationLog.setLogtype(LogType.PERMISSION.getMessage());
+                operationLog.setUserid(userId);
+                operationLog.setCreatetime(new Date());
+                operationLog.setLogname(permissionName);
+                operationLog.setSucceed(LogStatus.FAIL.getMessage());
+                operationLog.setClassname(clazzName);
+                operationLog.setMethod(methodName);
+                String msg = permissionName + "失败, 原因: [" + SecurityExceptionEnum.INSUFFICIENT_PERMISSIONS.getMsg() + "]";
+                operationLog.setMessage(msg);
 
                 try {
                     logMapper.insertLog(operationLog);

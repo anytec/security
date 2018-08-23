@@ -1,78 +1,72 @@
 package cn.anytec.security.controller;
 
 import cn.anytec.security.common.ServerResponse;
+import cn.anytec.security.core.annotion.OperLog;
+import cn.anytec.security.core.annotion.Permission;
+import cn.anytec.security.core.enums.PermissionType;
 import cn.anytec.security.model.TbUser;
+import cn.anytec.security.model.vo.UserVO;
 import cn.anytec.security.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
 
-@Controller
+@RestController
 @RequestMapping("/user")
 public class UserController {
+
     @Autowired
     private UserService userService;
 
-    @RequestMapping(value = "/login",method = RequestMethod.POST)
-    @ResponseBody
-    public ServerResponse<TbUser> login(String username, String password, HttpSession session){
-        ServerResponse<TbUser> response = userService.login(username,password);
-        if(response.isSuccess()){
-            session.setAttribute("currentUser",response.getData());
-        }
-        return response;
+    @PostMapping("/login")
+    public ServerResponse<UserVO> login(String uname, String upass, HttpSession session){
+        return userService.login(uname,upass, session);
     }
 
-    @RequestMapping(value = "/logout",method = RequestMethod.POST)
-    @ResponseBody
+    @PostMapping("/logout")
     public ServerResponse<String> logout(HttpSession session){
         session.removeAttribute("currentUser");
         return ServerResponse.createBySuccess();
     }
 
-    @RequestMapping(value = "/register",method = RequestMethod.POST)
-    @ResponseBody
+    @OperLog(value = "注册用户", key = "uname,notes")
+    @Permission(value = "注册用户", method = PermissionType.IS_ADMIN)
+    @PostMapping("/register")
     public ServerResponse<String> register(TbUser user){
         return userService.register(user);
     }
 
-
-    @RequestMapping(value = "/checkUsername",method = RequestMethod.POST)
-    @ResponseBody
+    @PostMapping("/checkUsername")
     public ServerResponse<String> checkUsername(String username){
         return userService.checkUsername(username);
     }
 
-
-    @RequestMapping(value = "/getUserInfo",method = RequestMethod.POST)
-    @ResponseBody
-    public ServerResponse<TbUser> getUserInfo(){
-        return ServerResponse.createByErrorMessage("用户未登录,无法获取当前用户的信息");
+    @OperLog("查询用户详情信息")
+    @PostMapping("/getUserInfo")
+    public ServerResponse<UserVO> getUserInfo(@RequestParam(value = "id") Integer id){
+        return userService.getInformation(id);
     }
 
-    @RequestMapping(value = "/update",method = RequestMethod.POST)
-    @ResponseBody
-    public ServerResponse<TbUser> update(TbUser user){
-        ServerResponse<TbUser> response = userService.update(user);
-        return response;
+    @OperLog("修改用户信息")
+    @Permission(value = "修改用户信息", method = PermissionType.IS_ADMIN)
+    @PostMapping("/update")
+    public ServerResponse update(TbUser user){
+        return userService.update(user);
     }
 
-    @RequestMapping(value = "/list",method = RequestMethod.POST)
-    @ResponseBody
-    public ServerResponse list(@RequestParam(value = "pageNum",defaultValue = "1") int pageNum, @RequestParam(value = "pageSize",defaultValue = "10") int pageSize){
-        return userService.list(pageNum,pageSize);
+    @OperLog(value = "查询用户列表", key = "pageNum,pageSize,keyword")
+    @Permission(value = "查询用户列表", method = PermissionType.IS_ADMIN)
+    @PostMapping("/list")
+    public ServerResponse list(@RequestParam(value = "pageNum",defaultValue = "1") int pageNum,
+                               @RequestParam(value = "pageSize",defaultValue = "10") int pageSize,
+                               @RequestParam(value = "keyword", required = false) String keyword){
+        return userService.list(pageNum,pageSize, keyword);
     }
 
-
-    @RequestMapping(value = "/delete",method = RequestMethod.POST)
-    @ResponseBody
-    public ServerResponse delete(String userIds){
-        return userService.delete(userIds);
+    @PostMapping("/delete")
+    public ServerResponse delete(String userIds, HttpSession session){
+        return userService.delete(userIds, session);
     }
 
 }

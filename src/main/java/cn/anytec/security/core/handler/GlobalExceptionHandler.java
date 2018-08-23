@@ -3,6 +3,7 @@ package cn.anytec.security.core.handler;
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.core.enums.SecurityExceptionEnum;
 import cn.anytec.security.core.exception.BussinessException;
+import cn.anytec.security.core.exception.PermissionException;
 import cn.anytec.security.core.log.LogManager;
 import cn.anytec.security.core.log.factory.LogTaskFactory;
 import cn.anytec.security.model.TbUser;
@@ -33,11 +34,41 @@ public class GlobalExceptionHandler {
 
         String msg;
         int code = HttpStatus.INTERNAL_SERVER_ERROR.value();
+        /**
+         * 此变量用于标记是否需要统一存储
+         * eg: PermissionException 不需要统一存储,执行到此处时可以先行返回
+         */
+        boolean needStorage = true;
+
+        StackTraceElement traceElement= e.getStackTrace()[0];
+        String typeName = traceElement.getClassName();
+        String method = traceElement.getMethodName();
+        Integer lineNumber = traceElement.getLineNumber();
+
+        TbUser currentUser = (TbUser) req.getSession().getAttribute("currentUser");
+        if (null == currentUser) {
+            return ServerResponse.createByErrorCodeMessage(SecurityExceptionEnum.UNAUTHORIZED.getCode(), SecurityExceptionEnum.UNAUTHORIZED.getMsg());
+        }
+
+        // 更直观的显示错误信息
+        log.error(typeName + "." + method + "第" + lineNumber + "行出错.错误原因：" + e.toString());
+
+        // 打印出错误信息
+        e.printStackTrace();
 
         // 业务异常
         if (e instanceof BussinessException) {
             BussinessException bussinessException = (BussinessException) e;
             msg = bussinessException.getMsg();
+        }
+
+        // 权限不足 403
+        else if (e instanceof PermissionException) {
+            PermissionException permissionException = (PermissionException) e;
+            msg = permissionException.getMsg();
+            code = permissionException.getCode();
+
+            needStorage = false;
         }
 
         // 400
@@ -71,20 +102,7 @@ public class GlobalExceptionHandler {
             msg = e.getMessage();
         }
 
-        StackTraceElement traceElement= e.getStackTrace()[0];
-        String typeName = traceElement.getFileName().replace(".java", "");
-        String method = traceElement.getMethodName();
-        Integer lineNumber = traceElement.getLineNumber();
-
-        // 更直观的显示错误信息
-        log.error(typeName + "." + method + "第" + lineNumber + "行出错.错误原因：" + e.toString());
-
-        // 打印出错误信息
-        e.printStackTrace();
-
-        TbUser currentUser = (TbUser) req.getSession().getAttribute("currentUser");
-        // 当处于登录状态时,将异常信息存入数据库
-        if (null != currentUser) {
+        if (needStorage) {
             LogManager.me().execute(LogTaskFactory.exceptionLog(currentUser.getId(), e, typeName, method));
         }
 

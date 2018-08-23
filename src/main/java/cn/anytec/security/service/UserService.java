@@ -2,23 +2,26 @@ package cn.anytec.security.service;
 
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.model.TbUser;
+import cn.anytec.security.model.vo.UserVO;
 import com.github.pagehelper.PageInfo;
+
+import javax.servlet.http.HttpSession;
 
 public interface UserService {
 
-    ServerResponse<TbUser> login(String username, String password);
+    ServerResponse<UserVO> login(String uname, String upass, HttpSession session);
 
-    ServerResponse<String> register(TbUser user);
+    ServerResponse register(TbUser user);
 
     ServerResponse<String> checkUsername(String username);
 
-    ServerResponse<PageInfo> list(int pageNum, int pageSize);
+    ServerResponse<PageInfo> list(int pageNum, int pageSize, String keyword);
 
-    ServerResponse delete(String userIds);
+    ServerResponse delete(String userIds, HttpSession session);
 
-    ServerResponse<TbUser> update(TbUser user);
+    ServerResponse update(TbUser user);
 
-    ServerResponse<TbUser> getInformation(Integer userId);
+    ServerResponse<UserVO> getInformation(Integer userId);
 
     ServerResponse checkAdminRole(TbUser user);
 }
