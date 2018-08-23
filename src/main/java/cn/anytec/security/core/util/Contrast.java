@@ -23,7 +23,7 @@ public class Contrast {
      * @param o2
      * @return
      */
-    public static String consrastObj(Object o1, Map<String, String> o2) throws IntrospectionException, InvocationTargetException, IllegalAccessException {
+    public static String contrastObj(Object o1, Map<String, String> o2) throws IntrospectionException, InvocationTargetException, IllegalAccessException {
 
         Class<?> o1Clazz = o1.getClass();
         Field[] fields = o1Clazz.getDeclaredFields();

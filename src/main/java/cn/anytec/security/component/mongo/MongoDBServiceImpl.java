@@ -448,12 +448,12 @@ public class MongoDBServiceImpl implements MongoDBService {
     private Map<String,List<Integer>> getAgeAnalysis(Map<String, String[]> paramMap){
         BasicDBObject basicDBObject = getAnalysisDbObject(paramMap);
         Map<String,List<Integer>> ageMap = new HashMap<>();
-        Integer[] ages = {0,10,20,30,40,50,60,70,80,90};
-        for(int i=0; i<ages.length-2; i++){
+        Integer[] ages = {0,15,36,61,91};
+        for(int i=0; i<ages.length-1; i++){
             BasicDBObject dbObject = basicDBObject;
             dbObject.put("age", new BasicDBObject().
                     append("$gte", ages[i]).
-                    append("$lte", ages[i+1]));
+                    append("$lt", ages[i+1]));
             dbObject.put("gender","male");
             Integer maleCount = Integer.parseInt(snapshotCollection.count(dbObject)+"");
             dbObject.put("gender","female");
@@ -463,7 +463,7 @@ public class MongoDBServiceImpl implements MongoDBService {
             countList.add(maleCount);
             countList.add(femaleCount);
             countList.add(total);
-            String key = ages[i]+" ~ "+ages[i+1];
+            String key = ages[i]+" ~ "+(ages[i+1]-1);
             ageMap.put(key,countList);
         }
         return ageMap;
