@@ -26,15 +26,15 @@ sdk:
 #  hostIp: 192.168.10.132
 #  port: 8000
 #  token: GxSW-JKSD
-  version: v0
+  version: v1
   identifyType: biggest
-  snapGallery: 158Snap
-  staticGallery: ggggler1
+  snapGallery: 126Snap
+  staticGallery: 126Static
   warningThreshold: 0.7
   snapIdentifyNumber: 10
-  emotionsOpen: false
-  genderOpen: false
-  ageOpen: false
+  emotionsOpen: true
+  genderOpen: true
+  ageOpen: true
 
 redisKeys:
   cameraBySdkId: getCameraBySdkId

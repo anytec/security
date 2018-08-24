@@ -98,7 +98,7 @@ public class OperLogAop {
         boolean edit = (operName.indexOf("修改") != -1) || (operName.indexOf("编辑") != -1);
         if (edit) {
             Object obj1 = LogObjectHolder.me().get();
-            msg = Contrast.consrastObj(obj1, reqParam);
+            msg = Contrast.contrastObj(obj1, reqParam);
         }else {
 
             msg = Contrast.parseMutiKey(operKey, reqParam);
