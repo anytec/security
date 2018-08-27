@@ -13,6 +13,7 @@ public class FrWarning {
     private Integer age;
     private List<String> emotions;
     private String idNumber;
+    private String faceSdkId;
     private Integer personGroupId;
     private String personGroupName;
     private Integer cameraId;
@@ -155,5 +156,13 @@ public class FrWarning {
 
     public void setIdNumber(String idNumber) {
         this.idNumber = idNumber;
+    }
+
+    public String getFaceSdkId() {
+        return faceSdkId;
+    }
+
+    public void setFaceSdkId(String faceSdkId) {
+        this.faceSdkId = faceSdkId;
     }
 }

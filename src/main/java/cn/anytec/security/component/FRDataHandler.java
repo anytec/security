@@ -1,5 +1,6 @@
 package cn.anytec.security.component;
 
+import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.config.GeneralConfig;
 import cn.anytec.security.findface.FindFaceService;
 import cn.anytec.security.findface.model.*;
@@ -221,20 +222,25 @@ public class FRDataHandler {
             warning.setPersonGroupId(person.getGroupId());
             warning.setPersonGroupName(person.getGroupName());
             warning.setIdNumber(person.getIdNumber());
+            warning.setFaceSdkId(person.getSdkId());
         }
     }
 
     //在动态库中搜索快照
-    public JSONObject identifySnap(IdenfitySnapParam idenfitySnapParam) {
+    public ServerResponse identifySnap(IdenfitySnapParam idenfitySnapParam) {
         JSONObject result = new JSONObject();
         FindFaceParam findFaceParam = getFindFaceParam(idenfitySnapParam);
         IdentifyPojo identifyPojo = identify(idenfitySnapParam, findFaceParam);
-        Map<String, String> sdkMap = getSdkIdConfidenceMap(identifyPojo);
-        if (sdkMap.size() > 0) {
-            result = mongoDBService.identifySnap(sdkMap, idenfitySnapParam);
-            return result;
+        if(identifyPojo != null){
+            Map<String, String> sdkMap = getSdkIdConfidenceMap(identifyPojo);
+            if (sdkMap.size() > 0) {
+                result = mongoDBService.identifySnap(sdkMap, idenfitySnapParam);
+                return ServerResponse.createBySuccess(result);
+            }else {
+                return ServerResponse.createBySuccess();
+            }
         }
-        return null;
+        return ServerResponse.createByError();
     }
 
     public FindFaceParam getFindFaceParam(IdenfitySnapParam param){

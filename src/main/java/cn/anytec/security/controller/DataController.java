@@ -1,8 +1,10 @@
 package cn.anytec.security.controller;
 
 import cn.anytec.security.common.ServerResponse;
+import cn.anytec.security.component.ServerStatus;
 import cn.anytec.security.component.mongo.MongoDBService;
 import com.alibaba.fastjson.JSONObject;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,8 +18,10 @@ public class DataController {
 
     @Autowired
     private MongoDBService mongoDBService;
+    @Autowired
+    ServerStatus serverStatus;
 
-    @RequestMapping("/sanpCounting")
+    @RequestMapping("/snapCounting")
     @ResponseBody
     public ServerResponse sanpCounting(){
         JSONObject result = mongoDBService.sanpCounting();
@@ -44,6 +48,16 @@ public class DataController {
         JSONObject result = mongoDBService.peopleAnalysis(request.getParameterMap());
         if(result != null){
             return ServerResponse.createBySuccess(result);
+        }
+        return ServerResponse.createByErrorMessage("peopleAnalysis发生错误！");
+    }
+
+    @RequestMapping("/serverStatus")
+    @ResponseBody
+    public ServerResponse ServerStatus(){
+        String memoryStatus = serverStatus.getMemoryStatus();
+        if(!StringUtils.isEmpty(memoryStatus)){
+            return ServerResponse.createBySuccess(memoryStatus);
         }
         return ServerResponse.createByErrorMessage("peopleAnalysis发生错误！");
     }

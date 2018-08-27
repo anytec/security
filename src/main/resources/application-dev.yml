@@ -41,6 +41,13 @@ redisKeys:
   cameraGroupById: getCameraGroupById
   peronBySdkId: getPersonBySdkId
   personGroupById: getPersonGroupById
+  personCounting: personCounting
+# mongodb
+mongo:
+  host: 127.0.0.1
+  databaseNames: security
+  snapshotCollection: snapshot
+  warningFaceCollection: warning_face
 
 
 constant:

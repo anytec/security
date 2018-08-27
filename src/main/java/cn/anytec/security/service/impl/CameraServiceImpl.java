@@ -67,7 +67,8 @@ public class CameraServiceImpl implements CameraService {
         return ServerResponse.createBySuccess();
     }
 
-    public List<TbCamera> list(int pageNum, int pageSize, String name, Integer groupId, String type, String serverLabel, Integer status) {
+    public List<TbCamera> list(int pageNum, int pageSize, String name, Integer groupId,
+                               String type, String serverLabel, Integer status, String cameraSdkId) {
         PageHelper.startPage(pageNum, pageSize);
         TbCameraExample example = new TbCameraExample();
         TbCameraExample.Criteria c = example.createCriteria();
@@ -85,6 +86,9 @@ public class CameraServiceImpl implements CameraService {
         }
         if (status != null) {
             c.andCameraStatusEqualTo(status);
+        }
+        if (!StringUtils.isEmpty(cameraSdkId)) {
+            c.andSdkIdEqualTo(cameraSdkId);
         }
         List<TbCamera> cameraList = cameraMapper.selectByExample(example);
         return cameraList;
