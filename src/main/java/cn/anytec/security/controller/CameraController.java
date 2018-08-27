@@ -33,9 +33,10 @@ public class CameraController {
                                @RequestParam(value = "groupId",required = false)Integer groupId,
                                @RequestParam(value = "type",required = false)String type,
                                @RequestParam(value = "serverLabel",required = false)String serverLabel,
-                               @RequestParam(value = "status",required = false)Integer status){
+                               @RequestParam(value = "status",required = false)Integer status,
+                               @RequestParam(value = "cameraSdkId",required = false)String cameraSdkId){
 
-        List<TbCamera> cameraList = cameraService.list(pageNum, pageSize, name, groupId, type, serverLabel, status);
+        List<TbCamera> cameraList = cameraService.list(pageNum,pageSize,name,groupId,type,serverLabel,status,cameraSdkId);
         PageInfo pageResult = new PageInfo(cameraList);
         return ServerResponse.createBySuccess(pageResult);
     }

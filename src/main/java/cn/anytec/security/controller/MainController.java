@@ -43,10 +43,7 @@ public class MainController {
     @RequestMapping("/main/identifySnap")
     @ResponseBody
     public ServerResponse identifySnap(IdenfitySnapParam param) {
-        JSONObject resultList = frDataHandler.identifySnap(param);
-        if (resultList != null) {
-            return ServerResponse.createBySuccess(resultList);
-        }
-        return ServerResponse.createByErrorMessage("");
+        return frDataHandler.identifySnap(param);
     }
+
 }

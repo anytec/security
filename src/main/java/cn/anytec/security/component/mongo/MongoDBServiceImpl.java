@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.text.ParsePosition;
@@ -34,6 +35,8 @@ public class MongoDBServiceImpl implements MongoDBService {
     private CameraService cameraService;
     @Autowired
     private GroupCameraService groupCameraService;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     private static final Logger logger = LoggerFactory.getLogger(MongoDBServiceImpl.class);
 
@@ -45,6 +48,8 @@ public class MongoDBServiceImpl implements MongoDBService {
     private String configSnapshot;
     @Value("${mongo.warningFaceCollection}")
     private String configWarning_face;
+    @Value("${redisKeys.personCounting}")
+    private String personCounting;
 
     private  MongoClient mongoClient;
     private  MongoDatabase database;
@@ -296,16 +301,29 @@ public class MongoDBServiceImpl implements MongoDBService {
         dayCameraTimeMap.forEach((day, value) -> {
             List<JSONObject> dayCameraCountList = new ArrayList<>();
             value.forEach((cammeraName, timeDbObjectList) -> {
-                JSONObject cameraCountList = new JSONObject();
-                List<Integer> countList = new ArrayList<>();
-                countList.add(0);
-                Integer total = 0;
-                for (BasicDBObject timeDbObject : timeDbObjectList) {
-                    Integer count = Integer.parseInt(snapshotCollection.count(timeDbObject) + "");
-                    countList.add(count);
-                    total += count;
+                List<String> countList = new ArrayList<>();
+                String key = "";
+                if(paramMap.containsKey("cameraGroupIds")){
+                    key = day+",camGroup:"+cammeraName;
+                }else {
+                    key = day+",cam:"+cammeraName;
                 }
-                countList.add(total);
+                if (redisTemplate.opsForHash().hasKey(personCounting, key)) {
+                    String countStr =  redisTemplate.opsForHash().get(personCounting, key).toString();
+                    countList = Arrays.asList(countStr.split(","));
+                }else {
+                    countList.add("0");
+                    Integer total = 0;
+                    for (BasicDBObject timeDbObject : timeDbObjectList) {
+                        Integer count = Integer.parseInt(snapshotCollection.count(timeDbObject) + "");
+                        countList.add(count+"");
+                        total += count;
+                    }
+                    countList.add(total+"");
+                    String countStr = String.join(",",countList);
+                    redisTemplate.opsForHash().put(personCounting, key, countStr);
+                }
+                JSONObject cameraCountList = new JSONObject();
                 cameraCountList.put(cammeraName, countList);
                 dayCameraCountList.add(cameraCountList);
             });
@@ -364,7 +382,7 @@ public class MongoDBServiceImpl implements MongoDBService {
                 }
             }
         }else {
-            cameraList = cameraService.list(1,5,null,null,null,null,null);
+            cameraList = cameraService.list(1,5,null,null,null,null,null,null);
         }
         return cameraList;
     }
