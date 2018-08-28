@@ -26,7 +26,7 @@ public class OperationLogVO {
     /**
      * 操作用户名称
      */
-    private String username;
+    private String uname;
     /**
      * 类名称
      */
@@ -71,12 +71,12 @@ public class OperationLogVO {
         this.logname = logname;
     }
 
-    public String getUsername() {
-        return username;
+    public String getUname() {
+        return uname;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setUname(String uname) {
+        this.uname = uname;
     }
 
     public String getClassname() {
@@ -117,7 +117,7 @@ public class OperationLogVO {
                 "id=" + id +
                 ", logtype='" + logtype + '\'' +
                 ", logname='" + logname + '\'' +
-                ", username='" + username + '\'' +
+                ", uname='" + uname + '\'' +
                 ", classname='" + classname + '\'' +
                 ", method='" + method + '\'' +
                 ", createtime=" + createtime +

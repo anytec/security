@@ -1,6 +1,8 @@
 package cn.anytec.security.core.util;
 
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.core.enums.SecurityExceptionEnum;
+import cn.anytec.security.core.exception.BussinessException;
 import org.apache.commons.lang3.StringUtils;
 
 import java.beans.IntrospectionException;
@@ -27,6 +29,10 @@ public class Contrast {
      * @return
      */
     public static String consrastObj(Object o1, Map<String, String> o2) throws IntrospectionException, InvocationTargetException, IllegalAccessException {
+
+        if (null == o1) {
+            throw new BussinessException(SecurityExceptionEnum.REQUEST_NULL.getCode(), "非法请求.请先打开页面");
+        }
 
         Class<?> o1Clazz = o1.getClass();
         Field[] fields = o1Clazz.getDeclaredFields();

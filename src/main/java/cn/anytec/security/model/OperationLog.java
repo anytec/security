@@ -28,6 +28,10 @@ public class OperationLog {
      */
 	private Integer userid;
     /**
+     * 操作对象
+     */
+    private String operationObj;
+    /**
      * 类名称
      */
 	private String classname;
@@ -121,18 +125,27 @@ public class OperationLog {
 		this.message = message;
 	}
 
-	@Override
-	public String toString() {
-		return "OperationLog{" +
-			"id=" + id +
-			", logtype=" + logtype +
-			", logname=" + logname +
-			", userid=" + userid +
-			", classname=" + classname +
-			", method=" + method +
-			", createtime=" + createtime +
-			", succeed=" + succeed +
-			", message=" + message +
-			"}";
-	}
+    public String getOperationObj() {
+        return operationObj;
+    }
+
+    public void setOperationObj(String operationObj) {
+        this.operationObj = operationObj;
+    }
+
+    @Override
+    public String toString() {
+        return "OperationLog{" +
+                "id=" + id +
+                ", logtype='" + logtype + '\'' +
+                ", logname='" + logname + '\'' +
+                ", userid=" + userid +
+                ", operationObj='" + operationObj + '\'' +
+                ", classname='" + classname + '\'' +
+                ", method='" + method + '\'' +
+                ", createtime=" + createtime +
+                ", succeed='" + succeed + '\'' +
+                ", message='" + message + '\'' +
+                '}';
+    }
 }

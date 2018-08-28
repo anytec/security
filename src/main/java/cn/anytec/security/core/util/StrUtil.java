@@ -1,5 +1,10 @@
 package cn.anytec.security.core.util;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static cn.anytec.security.core.enums.OperationEnum.operationObject;
+
 /**
  * Created by imyzt on 2018/8/17 15:22
  * 字符串工具类
@@ -19,6 +24,15 @@ public class StrUtil {
             return new String(chars);
         }
         return str;
+    }
+
+    public static String replaceOperationObj(String requestURI) {
+
+        Pattern p = Pattern.compile("/(.*?)/");
+        Matcher m = p.matcher(requestURI);
+        String operationObj = m.find() ? m.group(1) : "";
+
+        return operationObject.get(operationObj);
     }
 
 }
