@@ -64,6 +64,8 @@ public class UserController {
         return userService.list(pageNum,pageSize, keyword);
     }
 
+    @OperLog(value = "删除用户", key = "userIds")
+    @Permission(value = "删除用户", method = PermissionType.IS_ADMIN)
     @PostMapping("/delete")
     public ServerResponse delete(String userIds, HttpSession session){
         return userService.delete(userIds, session);

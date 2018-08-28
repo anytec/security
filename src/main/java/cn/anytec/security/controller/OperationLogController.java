@@ -2,15 +2,12 @@ package cn.anytec.security.controller;
 
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.core.annotion.OperLog;
-import cn.anytec.security.model.vo.OperationLogVO;
+import cn.anytec.security.core.annotion.Permission;
+import cn.anytec.security.core.enums.PermissionType;
 import cn.anytec.security.service.OperationLogService;
+import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * Created by imyzt on 2018/8/16 14:54
@@ -22,12 +19,28 @@ public class OperationLogController {
     @Autowired
     private OperationLogService logService;
 
+    @Permission(value = "查询所有日志", method = PermissionType.IS_ADMIN)
     @OperLog(value = "查询所有日志")
     @GetMapping("list")
-    public ServerResponse list(@RequestParam(required = false) String firstTime, @RequestParam(required = false) String lastTime,
-                               @RequestParam(required = false) String logName, @RequestParam(required = false) String logType) {
+    public ServerResponse list(@RequestParam(value = "pageNum",defaultValue = "1") Integer pageNum,
+                               @RequestParam(value = "pageSize",defaultValue = "10") Integer pageSize,
+                               @RequestParam(required = false) String firstTime, @RequestParam(required = false) String lastTime,
+                               @RequestParam(required = false) String logType) {
 
-        List<OperationLogVO> logs = logService.list(firstTime, lastTime, logName, logType);
+        ServerResponse<PageInfo> logs = logService.list(pageNum, pageSize, firstTime, lastTime, logType);
+
+        return ServerResponse.createBySuccess(logs);
+    }
+
+    @Permission(value = "查询所有业务日志", method = PermissionType.IS_ADMIN)
+    @OperLog(value = "查询所有业务日志", key = "pageNum,pageSize,firstTime,lastTime,operationType,uname")
+    @GetMapping("operationRecordList")
+    public ServerResponse operationRecordList(@RequestParam(value = "pageNum",defaultValue = "1") Integer pageNum,
+                               @RequestParam(value = "pageSize",defaultValue = "10") Integer pageSize,
+                               @RequestParam(required = false) String firstTime, @RequestParam(required = false) String lastTime,
+                               @RequestParam(required = false) String operationType, @RequestParam(required = false) String uname) {
+
+        ServerResponse<PageInfo> logs = logService.operationRecordList(pageNum, pageSize, firstTime, lastTime, operationType, uname);
 
         return ServerResponse.createBySuccess(logs);
     }

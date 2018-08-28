@@ -6,6 +6,7 @@ import cn.anytec.security.core.log.LogManager;
 import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.core.log.factory.LogTaskFactory;
 import cn.anytec.security.core.util.Contrast;
+import cn.anytec.security.core.util.StrUtil;
 import cn.anytec.security.model.TbUser;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.Signature;
@@ -13,8 +14,6 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -26,7 +25,6 @@ import java.lang.reflect.Method;
 import java.util.Enumeration;
 import java.util.HashMap;
 
-
 /**
  * Created by imyzt on 2018/8/15 15:46
  * 日志记录AOP
@@ -34,8 +32,6 @@ import java.util.HashMap;
 @Aspect
 @Component
 public class OperLogAop {
-
-    private Logger log = LoggerFactory.getLogger(getClass());
 
     @Pointcut(value = "@annotation(cn.anytec.security.core.annotion.OperLog)")
     public void cut() {
@@ -75,7 +71,7 @@ public class OperLogAop {
 
         // 获取方法所在的类、方法参数
         String className = point.getTarget().getClass().getName();
-        Object[] methodArgs = point.getArgs();
+        //Object[] methodArgs = point.getArgs();
 
         // 获取操作的名称、唯一主键
         OperLog annotation = currentMethod.getAnnotation(OperLog.class);
@@ -104,9 +100,13 @@ public class OperLogAop {
             msg = Contrast.parseMutiKey(operKey, reqParam);
         }
 
+        // 业务日志: 匹配操作对象
+        String requestURI = request.getRequestURI();
+        String operationObj = StrUtil.replaceOperationObj(requestURI);
+
         // 业务日志入库
         LogManager.me().execute(LogTaskFactory.bussinessLog(user.getId(), operName,
-                className, methodName, msg));
+                className, methodName, msg, operationObj));
 
     }
 }

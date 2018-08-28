@@ -1,8 +1,12 @@
 package cn.anytec.security.service.impl;
 
+import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.dao.OperationLogMapper;
 import cn.anytec.security.model.vo.OperationLogVO;
+import cn.anytec.security.model.vo.OperationRecordVO;
 import cn.anytec.security.service.OperationLogService;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,10 +22,22 @@ public class OperationLogServiceImpl implements OperationLogService {
     private OperationLogMapper mapper;
 
     @Override
-    public List<OperationLogVO> list(String firstTime, String lastTime, String logName, String logType) {
+    public ServerResponse<PageInfo> list(Integer pageNum, Integer pageSize, String firstTime, String lastTime, String logType) {
 
-        List<OperationLogVO> logs = mapper.list(firstTime, lastTime, logName, logType);
+        PageHelper.startPage(pageNum, pageSize);
 
-        return logs;
+        List<OperationLogVO> logs = mapper.list(firstTime, lastTime, logType);
+
+        return ServerResponse.createBySuccess(PageInfo.of(logs));
+    }
+
+    @Override
+    public ServerResponse<PageInfo> operationRecordList(Integer pageNum, Integer pageSize, String firstTime, String lastTime, String operationType, String uname) {
+
+        PageHelper.startPage(pageNum, pageSize);
+
+        List<OperationRecordVO> logs = mapper.operationRecordList(firstTime, lastTime, operationType, uname);
+
+        return ServerResponse.createBySuccess(PageInfo.of(logs));
     }
 }

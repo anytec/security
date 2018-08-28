@@ -45,27 +45,27 @@ public class LogTaskFactory {
     /**
      * 业务日志
      */
-    public static TimerTask bussinessLog(Integer userId, String bussinessName,
-                                            String className, String methodName,
-                                            String msg) {
+    public static TimerTask bussinessLog(Integer userId, String operName,
+                                         String className, String methodName,
+                                         String msg, String operationObj) {
         return new TimerTask() {
 
             @Override
             public void run() {
                 OperationLog operationLog = new OperationLog();
                 operationLog.setLogtype(LogType.BUSSINESS.getMessage());
-                operationLog.setLogname(bussinessName);
+                operationLog.setLogname(operName);
                 operationLog.setUserid(userId);
                 operationLog.setClassname(className);
                 operationLog.setMethod(methodName);
                 operationLog.setCreatetime(new Date());
                 operationLog.setSucceed(LogStatus.SUCCESS.getMessage());
                 operationLog.setMessage(msg);
-
+                operationLog.setOperationObj(operationObj);
                 try {
                     logMapper.insertLog(operationLog);
                 }catch (Exception e){
-                    log.error("记录业务日志失败");
+                    log.error("记录业务日志失败;\\n" + e.getMessage());
                 }
             }
         };
