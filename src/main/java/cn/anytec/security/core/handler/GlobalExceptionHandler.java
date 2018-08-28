@@ -45,16 +45,14 @@ public class GlobalExceptionHandler {
         String method = traceElement.getMethodName();
         Integer lineNumber = traceElement.getLineNumber();
 
-        TbUser currentUser = (TbUser) req.getSession().getAttribute("currentUser");
         // 更直观的显示错误信息
         log.error(typeName + "." + method + "第" + lineNumber + "行出错.错误原因：" + e.toString());
 
         // 打印出错误信息
         e.printStackTrace();
-        if (null == currentUser) {
-            return ServerResponse.createByErrorCodeMessage(SecurityExceptionEnum.UNAUTHORIZED.getCode(), SecurityExceptionEnum.UNAUTHORIZED.getMsg());
-        }
 
+        TbUser currentUser = (TbUser) req.getSession().getAttribute("currentUser");
+        needStorage = null != currentUser;
 
         // 业务异常
         if (e instanceof BussinessException) {

@@ -14,12 +14,12 @@ public @interface Permission {
     /**
      * eg: 查询用户列表
      */
-    String value() default "";
+    String value();
 
     /**
      * 需要验证的method
      */
-    String method() default "";
+    String method();
 
 
 }
