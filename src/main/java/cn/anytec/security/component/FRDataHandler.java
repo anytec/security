@@ -27,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.*;
 
 
@@ -50,7 +51,8 @@ public class FRDataHandler {
     private WSSendHandler wsSendHandler;
 
     public void recieveSnap(String cameraSdkId, String timestamp, String bbox, MultipartFile photo) {
-        TimeModel timeModel = new TimeModel(timestamp);
+        LocalDateTime localDateTime = LocalDateTime.parse(timestamp);
+        TimeModel timeModel = new TimeModel(localDateTime);
         List<IdentifyFace> faceList = addFace(photo,cameraSdkId,bbox);
         if (!CollectionUtils.isEmpty(faceList)) {
             TbCamera camera = cameraService.getCameraBySdkId(cameraSdkId);

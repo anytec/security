@@ -107,8 +107,8 @@ public class MongoDBServiceImpl implements MongoDBService {
                 dbObject.put("cameraGroupId", cameraGroupId);
             }
         }
-        //cameraSdkId条件
         insertCameraQuery(paramMap,dbObject);
+        //faceSdkId条件
         if (paramMap.containsKey("faceSdkId")) {
             String faceSdkId = paramMap.get("faceSdkId")[0];
             if (!StringUtils.isEmpty(faceSdkId)) {
@@ -169,6 +169,13 @@ public class MongoDBServiceImpl implements MongoDBService {
             if (!StringUtils.isEmpty(idNumber)) {
                 Pattern idNumberPattern = Pattern.compile("^.*" + idNumber + ".*$");
                 dbObject.put("idNumber", idNumberPattern);
+            }
+        }
+        //faceSdkId条件
+        if (paramMap.containsKey("faceSdkId")) {
+            String faceSdkId = paramMap.get("faceSdkId")[0];
+            if (!StringUtils.isEmpty(faceSdkId)) {
+                dbObject.put("faceSdkId", faceSdkId);
             }
         }
         //cameraSdkId条件
@@ -267,6 +274,7 @@ public class MongoDBServiceImpl implements MongoDBService {
             }
         }
         List<JSONObject> dataList = getResultJson(snapshotCollection.find(dbObject).sort(new BasicDBObject("timestamp", -1)));
+        Map<String,Integer> cameraSnapCount = new HashMap<>();
         for (JSONObject data : dataList) {
             String sdkId = data.get("faceSdkId").toString();
             if (sdkMap.containsKey(sdkId)) {
@@ -277,6 +285,15 @@ public class MongoDBServiceImpl implements MongoDBService {
                 TbCamera camera = cameraService.getCameraBySdkId(cameraSdkId);
                 data.put("cameraName", camera.getName());
                 data.put("cameraGroupName", camera.getGroupName());
+                data.put("cameraStatus",camera.getCameraStatus());
+            }
+            if(cameraSnapCount.containsKey(cameraSdkId)){
+                data.put("snapCount",Integer.parseInt(cameraSnapCount.get(cameraSdkId).toString()));
+            }else {
+                BasicDBObject cameraDbObject = new BasicDBObject();
+                cameraDbObject.put("cameraSdkId",cameraSdkId);
+                Integer snapCount = Integer.parseInt(snapshotCollection.count(cameraDbObject)+"");
+                data.put("snapCount",snapCount);
             }
         }
         Integer count = Integer.parseInt(snapshotCollection.count(dbObject) + "");
@@ -285,7 +302,7 @@ public class MongoDBServiceImpl implements MongoDBService {
         return result;
     }
 
-    public JSONObject sanpCounting(){
+    public JSONObject snapCounting(){
         JSONObject result = new JSONObject();
         Integer snapCount = Integer.parseInt(snapshotCollection.count() + "");
         Integer warningCount = Integer.parseInt(warningFaceCollection.count() + "");
@@ -321,7 +338,9 @@ public class MongoDBServiceImpl implements MongoDBService {
                     }
                     countList.add(total+"");
                     String countStr = String.join(",",countList);
-                    redisTemplate.opsForHash().put(personCounting, key, countStr);
+                    if(!day.equals(getToday())){
+                        redisTemplate.opsForHash().put(personCounting, key, countStr);
+                    }
                 }
                 JSONObject cameraCountList = new JSONObject();
                 cameraCountList.put(cammeraName, countList);
@@ -368,6 +387,12 @@ public class MongoDBServiceImpl implements MongoDBService {
             dayList.add(day);
         }
         return dayList;
+    }
+
+    private String getToday(){
+        Calendar calendar = Calendar.getInstance();
+        Date date = calendar.getTime();
+        return format.format(date);
     }
 
     private List<TbCamera> getCameraList(Map<String, String[]> paramMap) {

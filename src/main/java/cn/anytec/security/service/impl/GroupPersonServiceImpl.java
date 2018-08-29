@@ -4,8 +4,11 @@ import cn.anytec.security.common.ResponseCode;
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.config.GeneralConfig;
 import cn.anytec.security.dao.TbGroupPersonMapper;
+import cn.anytec.security.dao.TbPersonMapper;
 import cn.anytec.security.model.TbGroupPerson;
 import cn.anytec.security.model.TbGroupPersonExample;
+import cn.anytec.security.model.TbPerson;
+import cn.anytec.security.model.TbPersonExample;
 import cn.anytec.security.service.GroupPersonService;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.PageHelper;
@@ -23,6 +26,8 @@ import java.util.List;
 public class GroupPersonServiceImpl implements GroupPersonService {
     @Autowired
     private TbGroupPersonMapper groupPersonMapper;
+    @Autowired
+    private TbPersonMapper personMapper;
     @Autowired
     private RedisTemplate redisTemplate;
     @Autowired
@@ -45,9 +50,24 @@ public class GroupPersonServiceImpl implements GroupPersonService {
         if(groupName != null){
             c.andNameLike("%"+groupName.trim()+"%");
         }
-        List<TbGroupPerson> personList = groupPersonMapper.selectByExample(example);
-        PageInfo pageResult = new PageInfo(personList);
+        List<TbGroupPerson> personGroupList = groupPersonMapper.selectByExample(example);
+        for(TbGroupPerson personGroup : personGroupList){
+            getPersonGroupNum(personGroup);
+        }
+        PageInfo pageResult = new PageInfo(personGroupList);
         return ServerResponse.createBySuccess(pageResult);
+    }
+
+    private void getPersonGroupNum(TbGroupPerson personGroup){
+        TbPersonExample example = new TbPersonExample();
+        TbPersonExample.Criteria c = example.createCriteria();
+        c.andGroupIdEqualTo(personGroup.getId());
+        List<TbPerson> personList = personMapper.selectByExample(example);
+        if(!CollectionUtils.isEmpty(personList)){
+            personGroup.setTotalNumber(personList.size());
+        }else {
+            personGroup.setTotalNumber(0);
+        }
     }
 
     public ServerResponse delete(String groupPersonIds){

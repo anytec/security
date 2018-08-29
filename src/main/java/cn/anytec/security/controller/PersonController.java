@@ -34,12 +34,14 @@ public class PersonController {
                                @RequestParam(value = "name",required = false)String name,
                                @RequestParam(value = "idNumber",required = false)String idNumber,
                                @RequestParam(value = "gender",required = false)String gender,
-                               @RequestParam(value = "groupId",required = false)Integer groupId){
+                               @RequestParam(value = "groupId",required = false)Integer groupId,
+                               @RequestParam(value = "faceSdkId",required = false)String faceSdkId){
         TbPerson tbPerson = new TbPerson();
         tbPerson.setName(name);
         tbPerson.setIdNumber(idNumber);
         tbPerson.setGender(gender);
         tbPerson.setGroupId(groupId);
+        tbPerson.setSdkId(faceSdkId);
         return personService.list(pageNum,pageSize,tbPerson);
     }
 

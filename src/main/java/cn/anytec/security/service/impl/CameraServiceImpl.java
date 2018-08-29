@@ -97,9 +97,18 @@ public class CameraServiceImpl implements CameraService {
     public ServerResponse<TbCamera> update(TbCamera camera) {
         int updateCount = cameraMapper.updateByPrimaryKeySelective(camera);
         if (updateCount > 0) {
+            changeRedisCameraInfo(camera);
             return ServerResponse.createBySuccess("更新camera信息成功", camera);
         }
         return ServerResponse.createByErrorMessage("更新camera信息失败");
+    }
+
+    private void changeRedisCameraInfo(TbCamera camera){
+        String redisKey = config.getCameraBySdkId();
+        String cameraSdkId = camera.getSdkId();
+        if (redisTemplate.opsForHash().hasKey(redisKey, cameraSdkId)) {
+            redisTemplate.opsForHash().put(redisKey, cameraSdkId, JSONObject.toJSONString(camera));
+        }
     }
 
     public TbCamera getCameraBySdkId(String sdkId) {

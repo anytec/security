@@ -19,7 +19,7 @@ public interface MongoDBService {
 
     JSONObject identifySnap(Map<String,String> sdkMap, IdenfitySnapParam idenfitySnapParam);
 
-    JSONObject sanpCounting();
+    JSONObject snapCounting();
     
     JSONObject peopleCounting(Map<String, String[]> paramMap);
 

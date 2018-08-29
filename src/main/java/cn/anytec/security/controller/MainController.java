@@ -1,10 +1,9 @@
 package cn.anytec.security.controller;
 
 import cn.anytec.security.common.ServerResponse;
-import cn.anytec.security.model.parammodel.IdenfitySnapParam;
 import cn.anytec.security.component.FRDataHandler;
+import cn.anytec.security.model.parammodel.IdenfitySnapParam;
 import cn.anytec.security.service.CameraService;
-import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -175,6 +175,9 @@ public class PersonServiceImpl implements PersonService {
         if (!StringUtils.isEmpty(person.getName())) {
             c.andNameLike("%" + person.getName().trim() + "%");
         }
+        if (!StringUtils.isEmpty(person.getSdkId())) {
+            c.andSdkIdEqualTo(person.getSdkId());
+        }
         example.setOrderByClause("enroll_time desc");
         List<TbPerson> personList = personMapper.selectByExample(example);
         System.out.println(personList.size());

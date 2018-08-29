@@ -1,6 +1,7 @@
 package cn.anytec.security.controller;
 
 import cn.anytec.security.common.ServerResponse;
+import cn.anytec.security.component.ipcamera.ipcService.IPCOperations;
 import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.service.CameraService;
 import com.github.pagehelper.PageInfo;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 //@RequestMapping("/camera")
@@ -15,6 +17,8 @@ public class CameraController {
 
     @Autowired
     private CameraService cameraService;
+    @Autowired
+    private IPCOperations ipcOperations;
 
     @PostMapping("/camera/add")
     public ServerResponse add(TbCamera camera){
@@ -65,6 +69,21 @@ public class CameraController {
     @RequestMapping("/camera/getServerLabel")
     public ServerResponse getServerLabel(){
         return cameraService.getServerLabel();
+    }
+
+    @RequestMapping("/getCaptureCameras")
+    public Map<String, String> getCaptureCameras(){
+        return ipcOperations.getCaptureCameras();
+    }
+
+    @RequestMapping("/activeCaptureCamera")
+    public boolean activeCaptureCamera(@RequestParam(value = "macAddress")String macAddress, @RequestParam(value = "ipcAddress")String ipcAddress){
+        return ipcOperations.activeCaptureCamera(macAddress,ipcAddress);
+    }
+
+    @RequestMapping("/invalidCaptureCamera")
+    public boolean invalidCaptureCamera(@RequestParam(value = "macAddress")String macAddress, @RequestParam(value = "ipcAddress")String ipcAddress){
+        return ipcOperations.invalidCaptureCamera(macAddress,ipcAddress);
     }
 
 }
