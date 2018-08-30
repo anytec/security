@@ -44,7 +44,7 @@ public class HistoryController {
         return ServerResponse.createByErrorMessage("查询mongo warningFace发生错误！");
     }
 
-    @RequestMapping("/getTodayWarnTimes")
+    @RequestMapping("/getWeekWarnTimes")
     @ResponseBody
     public JSONObject getSnapTimes(){
         JSONObject result = new JSONObject();

@@ -3,6 +3,7 @@ package cn.anytec.security.config;
  * 服务器启动时自动执行
  */
 
+import cn.anytec.security.component.ipcamera.netty.UDPServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,10 +24,14 @@ public class MyApplicationRunner implements ApplicationRunner {
     private static final Logger logger = LoggerFactory.getLogger(MyApplicationRunner.class);
     @Autowired
     private RedisTemplate redisTemplate;
+    @Autowired
+    private UDPServer udpServer;
     @Value("${constant.serverLabel}")
     private String serverLabel;
     @Value("${camera.allProcess}")
     private String allProcessLabel;
+    @Value("${ipc.port}")
+    private int port;
 
     @Override
     public void run(ApplicationArguments arg) throws Exception {
@@ -42,6 +47,7 @@ public class MyApplicationRunner implements ApplicationRunner {
             });
             redisTemplate.delete(serverLabel);
         }
+        udpServer.init(port);
         /*logger.info("删除完毕");
         logger.info("启动fkvideo视频侦测！");
         String[] cmd = new String[]{"/usr/bin/fkvideo_detector"

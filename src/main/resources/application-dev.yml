@@ -1,3 +1,5 @@
+ipc:
+  port: 9998
 server:
   port: 9999
 spring:
