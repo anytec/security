@@ -9,13 +9,13 @@ import java.util.Map;
 public class OperationEnum {
 
     public final static Map<String, String> operationObject = new HashMap<String, String>(){{
-        put("user", "ÓÃ»§¹ÜÀí");
-        put("log", "ÈÕÖ¾¹ÜÀí");
-        put("camera", "Éè±¸¹ÜÀí");
-        put("data", "Êı¾İ¿ÉÊÓ»¯");
-        put("groupCamera", "ÀúÊ·ÈËÁ³");
-        put("groupPerson", "²¼¿Ø¹ÜÀí");
-        put("history", "ÀúÊ·ÈËÁ³");
-        put("person", "ÈËÔ±¹ÜÀí");
+        put("user", "ç”¨æˆ·ç®¡ç†");
+        put("log", "æ—¥å¿—ç®¡ç†");
+        put("camera", "è®¾å¤‡ç®¡ç†");
+        put("data", "æ•°æ®å¯è§†åŒ–");
+        put("groupCamera", "å†å²äººè„¸");
+        put("groupPerson", "å¸ƒæ§ç®¡ç†");
+        put("history", "å†å²äººè„¸");
+        put("person", "äººå‘˜ç®¡ç†");
     }};
 }
