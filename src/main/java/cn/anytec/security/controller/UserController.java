@@ -4,6 +4,7 @@ import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.core.annotion.OperLog;
 import cn.anytec.security.core.annotion.Permission;
 import cn.anytec.security.core.enums.PermissionType;
+import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.model.TbUser;
 import cn.anytec.security.model.vo.UserVO;
 import cn.anytec.security.service.UserService;
@@ -45,7 +46,9 @@ public class UserController {
     @OperLog("查询用户详情信息")
     @PostMapping("/getUserInfo")
     public ServerResponse<UserVO> getUserInfo(@RequestParam(value = "id") Integer id){
-        return userService.getInformation(id);
+        ServerResponse<UserVO> response = userService.getInformation(id);
+        LogObjectHolder.me().set(response.getData());
+        return response;
     }
 
     @OperLog("修改用户信息")
