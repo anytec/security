@@ -30,7 +30,7 @@ public class MyApplicationRunner implements ApplicationRunner {
     private String serverLabel;
     @Value("${camera.allProcess}")
     private String allProcessLabel;
-    @Value("${ipc.port}")
+    @Value("${sanpCamera.port}")
     private int port;
 
     @Override

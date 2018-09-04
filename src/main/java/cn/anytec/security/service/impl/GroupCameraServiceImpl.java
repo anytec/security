@@ -2,6 +2,7 @@ package cn.anytec.security.service.impl;
 
 import cn.anytec.security.common.ResponseCode;
 import cn.anytec.security.common.ServerResponse;
+import cn.anytec.security.component.mongo.MongoDBService;
 import cn.anytec.security.config.GeneralConfig;
 import cn.anytec.security.dao.TbCameraMapper;
 import cn.anytec.security.dao.TbGroupCameraMapper;
@@ -9,12 +10,13 @@ import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.model.TbCameraExample;
 import cn.anytec.security.model.TbGroupCamera;
 import cn.anytec.security.model.TbGroupCameraExample;
-import cn.anytec.security.service.CameraService;
+import cn.anytec.security.model.vo.CameraVO;
 import cn.anytec.security.service.GroupCameraService;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.google.common.base.Splitter;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,8 @@ public class GroupCameraServiceImpl implements GroupCameraService {
     private TbCameraMapper cameraMapper;
     @Autowired
     private RedisTemplate redisTemplate;
+    @Autowired
+    private MongoDBService mongoDBService;
     @Autowired
     private GeneralConfig config;
 
@@ -77,10 +81,20 @@ public class GroupCameraServiceImpl implements GroupCameraService {
         }
         for(String cameraGroupId : groupCameraIdList){
             if(!StringUtils.isEmpty(cameraGroupId)){
-                TbGroupCameraExample example = new TbGroupCameraExample();
-                TbGroupCameraExample.Criteria c = example.createCriteria();
-                c.andIdEqualTo(Integer.parseInt(cameraGroupId));
-                groupCameraMapper.deleteByExample(example);
+                TbCameraExample cameraExample = new TbCameraExample();
+                TbCameraExample.Criteria camC = cameraExample.createCriteria();
+                camC.andGroupIdEqualTo(Integer.parseInt(cameraGroupId));
+                List<TbCamera> camList = cameraMapper.selectByExample(cameraExample);
+                if(camList.size()>0){
+                    TbCamera camera = camList.get(0);
+                    String groupName = camera.getGroupName();
+                    return ServerResponse.createByErrorMessage("设备组里还有设备成员,不能删除设备组: "+groupName);
+                }
+
+                TbGroupCameraExample groupExample = new TbGroupCameraExample();
+                TbGroupCameraExample.Criteria groupC = groupExample.createCriteria();
+                groupC.andIdEqualTo(Integer.parseInt(cameraGroupId));
+                groupCameraMapper.deleteByExample(groupExample);
             }
         }
         return ServerResponse.createBySuccess();
@@ -95,9 +109,9 @@ public class GroupCameraServiceImpl implements GroupCameraService {
     }
 
     @Override
-    public ServerResponse<Map<String,List<TbCamera>>> getAllCameras() {
+    public ServerResponse<Map<String,List<CameraVO>>> getAllCameras(String status) {
         List<String>  keyList = new ArrayList<>();
-        Map<String,List<TbCamera>> allCamera = new HashMap<>();
+        Map<String,List<CameraVO>> allCamera = new HashMap<>();
         TbGroupCameraExample example = new TbGroupCameraExample();
         List<TbGroupCamera> groupCameraList = groupCameraMapper.selectByExample(example);
         if(groupCameraList.size()>0){
@@ -106,9 +120,25 @@ public class GroupCameraServiceImpl implements GroupCameraService {
             }
            for(String key : keyList){
                TbCameraExample cexm = new TbCameraExample();
-               cexm.createCriteria().andGroupIdEqualTo(Integer.parseInt(key.split(",")[1]));
+               TbCameraExample.Criteria c = cexm.createCriteria();
+               c.andGroupIdEqualTo(Integer.parseInt(key.split(",")[1]));
+               if(!StringUtils.isEmpty(status)){
+                   if(status.equals("activated")){
+                       c.andCameraStatusEqualTo(1);
+                   }
+               }
                List<TbCamera> cameraList = cameraMapper.selectByExample(cexm);
-               allCamera.put(key,cameraList);
+               List<CameraVO> cameraVOList = new ArrayList<>();
+               if(cameraList.size()>0){
+                   for(TbCamera camera : cameraList){
+                       CameraVO cameraVO = new CameraVO();
+                       BeanUtils.copyProperties(camera, cameraVO, "");
+                       long snapCount = mongoDBService.getSnapCountByCameraSdkId(camera.getSdkId());
+                       cameraVO.setSnapCount(snapCount);
+                       cameraVOList.add(cameraVO);
+                   }
+               }
+               allCamera.put(key, cameraVOList);
            }
            return ServerResponse.createBySuccess(allCamera);
         }

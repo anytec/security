@@ -10,7 +10,7 @@ import cn.anytec.security.model.TbPerson;
 import cn.anytec.security.model.TbPersonExample;
 import cn.anytec.security.model.parammodel.FindFaceParam;
 import cn.anytec.security.service.PersonService;
-import cn.anytec.security.model.vo.PersonVo;
+import cn.anytec.security.model.vo.PersonVO;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -19,14 +19,18 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service("PersonService")
 public class PersonServiceImpl implements PersonService {
@@ -40,13 +44,16 @@ public class PersonServiceImpl implements PersonService {
     @Autowired
     private GeneralConfig config;
 
-    public ServerResponse<TbPerson> add(PersonVo personVo) {
-        MultipartFile photo = personVo.getPhoto();
-        String photoUrl = personVo.getPhotoUrl();
+    @Value("${file.personPhotos.path}")
+    private String personPhotosPath;
+
+    public ServerResponse<TbPerson> add(PersonVO personVO) {
+        MultipartFile photo = personVO.getPhoto();
+        String photoUrl = personVO.getPhotoUrl();
         try {
             FacePojo facePojo = addSdkFace(photo,photoUrl);
             if(facePojo != null){
-                TbPerson person = parsePersonVo(personVo, facePojo);
+                TbPerson person = parsePersonVo(personVO, facePojo);
                 if (addMySqlFace(person)) {
                     return ServerResponse.createBySuccess("新增person成功", person);
                 }
@@ -61,6 +68,10 @@ public class PersonServiceImpl implements PersonService {
         FindFaceParam param = new FindFaceParam();
         param.setGalleries(new String[]{config.getStaticGallery()});
         param.setPhotoUrl(photoUrl);
+        param.setSdkIp(config.getStaticSdkIp());
+        param.setSdkPort(config.getStaticSdkPort());
+        param.setSdkVersion(config.getStaticSdkVersion());
+        param.setSdkToken(config.getStaticSdkToken());
         if(photo != null){
             return findFaceService.addFace(photo.getBytes(), param);
         }else {
@@ -111,11 +122,11 @@ public class PersonServiceImpl implements PersonService {
         return findFaceService.deleteFace(sdkId);
     }
 
-    public ServerResponse<TbPerson> update(PersonVo personVo) {
-        MultipartFile photo = personVo.getPhoto();
+    public ServerResponse<TbPerson> update(PersonVO personVO) {
+        MultipartFile photo = personVO.getPhoto();
         FacePojo facePojo = null;
         if (photo != null) {
-            String sdkId = personVo.getSdkId();
+            String sdkId = personVO.getSdkId();
             if (deleteSdkFace(sdkId)) {
                 try{
                     facePojo = addSdkFace(photo,null);
@@ -124,7 +135,7 @@ public class PersonServiceImpl implements PersonService {
                 }
             }
         }
-        TbPerson person = parsePersonVo(personVo, facePojo);
+        TbPerson person = parsePersonVo(personVO, facePojo);
         if(updateMysqlFace(person)){
             return ServerResponse.createBySuccessMessage("更新person信息成功");
         }
@@ -154,6 +165,7 @@ public class PersonServiceImpl implements PersonService {
         if (!CollectionUtils.isEmpty(personList)) {
             TbPerson person = personList.get(0);
             redisTemplate.opsForHash().put(redisKey,sdkId,JSONObject.toJSONString(person));
+            redisTemplate.expire(redisKey, 1, TimeUnit.DAYS);
             return ServerResponse.createBySuccess("getPersonBySdkId返回成功", person);
         }
         return ServerResponse.createByErrorMessage("getPersonBySdkId未查到符合条件的信息");
@@ -185,18 +197,46 @@ public class PersonServiceImpl implements PersonService {
         return ServerResponse.createBySuccess(pageResult);
     }
 
-
-    public TbPerson parsePersonVo(PersonVo personVo, FacePojo facePojo) {
-        TbPerson person = new TbPerson();
-        if(personVo.getId() != null){
-            person.setId(personVo.getId());
+/*    public String savePersonPhotos(MultipartFile[] files){
+        if (files == null || files.length == 0) {
+            return null;
         }
-        person.setName(personVo.getName());
-        person.setGender(personVo.getGender());
-        person.setIdNumber(personVo.getIdNumber());
-        person.setGroupName(personVo.getGroupName());
-        person.setGroupId(personVo.getGroupId());
-        person.setRemarks(personVo.getRemarks());
+        if (personPhotosPath.endsWith("/")) {
+            personPhotosPath = personPhotosPath.substring(0, personPhotosPath.length() - 1);
+        }
+        for (MultipartFile file : files) {
+            String filePath = personPhotosPath + "/" + file.getOriginalFilename();
+            makeDir(filePath);
+            File photo = new File(filePath);
+            try {
+                file.transferTo(photo);
+            } catch (IllegalStateException | IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return "";
+    }
+
+    private static void makeDir(String filePath) {
+        if (filePath.lastIndexOf('/') > 0) {
+            String dirPath = filePath.substring(0, filePath.lastIndexOf('/'));
+            File dir = new File(dirPath);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+        }*/
+
+    public TbPerson parsePersonVo(PersonVO personVO, FacePojo facePojo) {
+        TbPerson person = new TbPerson();
+        if(personVO.getId() != null){
+            person.setId(personVO.getId());
+        }
+        person.setName(personVO.getName());
+        person.setGender(personVO.getGender());
+        person.setIdNumber(personVO.getIdNumber());
+        person.setGroupName(personVO.getGroupName());
+        person.setGroupId(personVO.getGroupId());
+        person.setRemarks(personVO.getRemarks());
         Timestamp timestamp = new Timestamp(new Date().getTime());
         person.setEnrollTime(timestamp);
         if (facePojo != null) {

@@ -29,6 +29,8 @@ public interface MongoDBService {
 
     long getNumberOfSnapshotByTime(Long start_timestamp,Long end_timestamp);
 
+    long getSnapCountByCameraSdkId(String cameraSdkId);
+
 
 
 }

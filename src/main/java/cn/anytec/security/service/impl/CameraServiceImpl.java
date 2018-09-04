@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service("CameraService")
 public class CameraServiceImpl implements CameraService {
@@ -97,7 +98,8 @@ public class CameraServiceImpl implements CameraService {
     public ServerResponse<TbCamera> update(TbCamera camera) {
         int updateCount = cameraMapper.updateByPrimaryKeySelective(camera);
         if (updateCount > 0) {
-            changeRedisCameraInfo(camera);
+            TbCamera cam = cameraMapper.selectByPrimaryKey(camera.getId());
+            changeRedisCameraInfo(cam);
             return ServerResponse.createBySuccess("更新camera信息成功", camera);
         }
         return ServerResponse.createByErrorMessage("更新camera信息失败");
@@ -108,6 +110,7 @@ public class CameraServiceImpl implements CameraService {
         String cameraSdkId = camera.getSdkId();
         if (redisTemplate.opsForHash().hasKey(redisKey, cameraSdkId)) {
             redisTemplate.opsForHash().put(redisKey, cameraSdkId, JSONObject.toJSONString(camera));
+            redisTemplate.expire(redisKey, 1, TimeUnit.DAYS);
         }
     }
 
@@ -125,6 +128,7 @@ public class CameraServiceImpl implements CameraService {
         if (!CollectionUtils.isEmpty(cameraList)) {
             TbCamera camera = cameraList.get(0);
             redisTemplate.opsForHash().put(redisKey, sdkId, JSONObject.toJSONString(camera));
+            redisTemplate.expire(redisKey, 1, TimeUnit.DAYS);
             return camera;
         }
         return null;

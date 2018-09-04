@@ -5,32 +5,45 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class GeneralConfig {
-    @Value("${sdk.hostIp}")
-    private String sdkIp;
-    @Value("${sdk.port}")
-    private String sdkPort;
-    @Value("${sdk.url}")
-    private String sdkUrl;
-    @Value("${sdk.token}")
-    private String sdkToken;
-    @Value("${sdk.version}")
-    private String sdkVersion;
-    @Value("${sdk.identifyType}")
-    private String identifyType;
-    @Value("${sdk.snapGallery}")
+    //动态库sdk
+    @Value("${snapSdk.hostIp}")
+    private String snapSdkIp;
+    @Value("${snapSdk.port}")
+    private String snapSdkPort;
+    @Value("${snapSdk.url}")
+    private String snapSdkUrl;
+    @Value("${snapSdk.token}")
+    private String snapSdkToken;
+    @Value("${snapSdk.version}")
+    private String snapSdkVersion;
+    @Value("${snapSdk.identifyType}")
+    private String snapIdentifyType;
+    @Value("${snapSdk.snapGallery}")
     private String snapGallery;
-    @Value("${sdk.staticGallery}")
-    private String staticGallery;
-    @Value("${sdk.warningThreshold}")
-    private String warningThreshold;
-    @Value("${sdk.snapIdentifyNumber}")
+    @Value("${snapSdk.snapIdentifyNumber}")
     private Integer snapIdentifyNumber;
-    @Value("${sdk.emotionsOpen}")
+    @Value("${snapSdk.emotionsOpen}")
     private boolean emotionsOpen;
-    @Value("${sdk.genderOpen}")
+    @Value("${snapSdk.genderOpen}")
     private boolean genderOpen;
-    @Value("${sdk.ageOpen}")
+    @Value("${snapSdk.ageOpen}")
     private boolean ageOpen;
+    //静态库sdk
+    @Value("${staticSdk.hostIp}")
+    private String staticSdkIp;
+    @Value("${staticSdk.port}")
+    private String staticSdkPort;
+    @Value("${staticSdk.url}")
+    private String staticSdkUrl;
+    @Value("${staticSdk.token}")
+    private String staticSdkToken;
+    @Value("${staticSdk.version}")
+    private String staticSdkVersion;
+    @Value("${staticSdk.warningThreshold}")
+    private String warningThreshold;
+    @Value("${staticSdk.staticGallery}")
+    private String staticGallery;
+    //md5盐值
     @Value("${password.salt}")
     private String passwordSalt;
     @Value("${role.user}")
@@ -51,32 +64,52 @@ public class GeneralConfig {
     private String rtmpPrefix;
 
 
+    public String getSnapSdkIp() {
+        return snapSdkIp;
+    }
+
+    public String getSnapSdkPort() {
+        return snapSdkPort;
+    }
+
+    public String getSnapSdkUrl() {
+        return snapSdkUrl;
+    }
+
+    public String getSnapSdkToken() {
+        return snapSdkToken;
+    }
+
+    public String getSnapSdkVersion() {
+        return snapSdkVersion;
+    }
+
+    public String getSnapIdentifyType() {
+        return snapIdentifyType;
+    }
+
+    public String getStaticSdkIp() {
+        return staticSdkIp;
+    }
+
+    public String getStaticSdkPort() {
+        return staticSdkPort;
+    }
+
+    public String getStaticSdkUrl() {
+        return staticSdkUrl;
+    }
+
+    public String getStaticSdkToken() {
+        return staticSdkToken;
+    }
+
+    public String getStaticSdkVersion() {
+        return staticSdkVersion;
+    }
+
     public String getCameraUrl() {
         return cameraUrl;
-    }
-
-    public String getSdkIp() {
-        return sdkIp;
-    }
-
-    public String getSdkPort() {
-        return sdkPort;
-    }
-
-    public String getSdkUrl() {
-        return sdkUrl;
-    }
-
-    public String getSdkToken() {
-        return sdkToken;
-    }
-
-    public String getSdkVersion() {
-        return sdkVersion;
-    }
-
-    public String getIdentifyType() {
-        return identifyType;
     }
 
     public String getSnapGallery() {

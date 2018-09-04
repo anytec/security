@@ -1,6 +1,5 @@
 package cn.anytec.security.service.impl;
 
-import cn.anytec.security.common.ResponseCode;
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.config.GeneralConfig;
 import cn.anytec.security.dao.TbGroupPersonMapper;
@@ -21,6 +20,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service("GroupPersonService")
 public class GroupPersonServiceImpl implements GroupPersonService {
@@ -91,16 +91,17 @@ public class GroupPersonServiceImpl implements GroupPersonService {
         return ServerResponse.createByErrorMessage("更新groupPerson信息失败");
     }
 
-    public ServerResponse<TbGroupPerson> getGroupPersonById(Integer personGroupId) {
+    public ServerResponse<TbGroupPerson> getGroupPersonById(String personGroupId) {
         String redisKey = config.getPersonGroupById();
         if (redisTemplate.opsForHash().hasKey(redisKey, personGroupId)) {
-            String groupPersonStr= redisTemplate.opsForHash().get(redisKey, personGroupId).toString();
+            String groupPersonStr= (String)redisTemplate.opsForHash().get(redisKey, personGroupId);
+            redisTemplate.expire(redisKey, 1, TimeUnit.DAYS);
             TbGroupPerson groupPerson = JSONObject.parseObject(groupPersonStr,TbGroupPerson.class);
             return ServerResponse.createBySuccess("getGroupPersonById返回成功", groupPerson);
         }
         TbGroupPersonExample example = new TbGroupPersonExample();
         TbGroupPersonExample.Criteria c = example.createCriteria();
-        c.andIdEqualTo(personGroupId);
+        c.andIdEqualTo(Integer.parseInt(personGroupId));
         List<TbGroupPerson> groupCameraList = groupPersonMapper.selectByExample(example);
         if (!CollectionUtils.isEmpty(groupCameraList)) {
             TbGroupPerson groupPerson = groupCameraList.get(0);

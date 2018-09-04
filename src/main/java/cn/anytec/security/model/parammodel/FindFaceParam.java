@@ -13,6 +13,10 @@ public class FindFaceParam {
     private Integer n;
     private String photoUrl;
     private String bbox;
+    private String sdkIp;
+    private String sdkPort;
+    private String sdkVersion;
+    private String sdkToken;
 
     public Integer getN() {
         return n;
@@ -92,5 +96,37 @@ public class FindFaceParam {
 
     public void setBbox(String bbox) {
         this.bbox = bbox;
+    }
+
+    public String getSdkIp() {
+        return sdkIp;
+    }
+
+    public void setSdkIp(String sdkIp) {
+        this.sdkIp = sdkIp;
+    }
+
+    public String getSdkPort() {
+        return sdkPort;
+    }
+
+    public void setSdkPort(String sdkPort) {
+        this.sdkPort = sdkPort;
+    }
+
+    public String getSdkVersion() {
+        return sdkVersion;
+    }
+
+    public void setSdkVersion(String sdkVersion) {
+        this.sdkVersion = sdkVersion;
+    }
+
+    public String getSdkToken() {
+        return sdkToken;
+    }
+
+    public void setSdkToken(String sdkToken) {
+        this.sdkToken = sdkToken;
     }
 }

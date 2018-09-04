@@ -3,9 +3,11 @@ package cn.anytec.security.component.mongo;
 import cn.anytec.security.config.GeneralConfig;
 import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.model.TbGroupCamera;
+import cn.anytec.security.model.TbGroupPerson;
 import cn.anytec.security.model.parammodel.IdenfitySnapParam;
 import cn.anytec.security.service.CameraService;
 import cn.anytec.security.service.GroupCameraService;
+import cn.anytec.security.service.GroupPersonService;
 import com.alibaba.fastjson.JSONObject;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -25,6 +27,7 @@ import javax.annotation.PostConstruct;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 @Service
@@ -35,6 +38,8 @@ public class MongoDBServiceImpl implements MongoDBService {
     private CameraService cameraService;
     @Autowired
     private GroupCameraService groupCameraService;
+    @Autowired
+    private GroupPersonService groupPersonService;
     @Autowired
     private RedisTemplate redisTemplate;
 
@@ -294,6 +299,7 @@ public class MongoDBServiceImpl implements MongoDBService {
                 cameraDbObject.put("cameraSdkId",cameraSdkId);
                 Integer snapCount = Integer.parseInt(snapshotCollection.count(cameraDbObject)+"");
                 data.put("snapCount",snapCount);
+                cameraSnapCount.put(cameraSdkId,snapCount);
             }
         }
         Integer count = Integer.parseInt(snapshotCollection.count(dbObject) + "");
@@ -340,6 +346,7 @@ public class MongoDBServiceImpl implements MongoDBService {
                     String countStr = String.join(",",countList);
                     if(!day.equals(getToday())){
                         redisTemplate.opsForHash().put(personCounting, key, countStr);
+                        redisTemplate.expire(personCounting, 1, TimeUnit.DAYS);
                     }
                 }
                 JSONObject cameraCountList = new JSONObject();
@@ -576,6 +583,12 @@ public class MongoDBServiceImpl implements MongoDBService {
             return snapshotCollection.count(dbObject);
         }
         return -1;
+    }
+
+    public long getSnapCountByCameraSdkId(String cameraSdkId){
+        BasicDBObject dbObject = new BasicDBObject();
+        dbObject.put("cameraSdkId",cameraSdkId);
+        return snapshotCollection.count(dbObject);
     }
 
     private BasicDBObject getTimeDBObject(Map<String, String[]> paramMap) {

@@ -5,11 +5,13 @@ import cn.anytec.security.config.GeneralConfig;
 import cn.anytec.security.findface.FindFaceService;
 import cn.anytec.security.findface.model.*;
 import cn.anytec.security.model.TbCamera;
+import cn.anytec.security.model.TbGroupPerson;
 import cn.anytec.security.model.TbPerson;
 import cn.anytec.security.model.parammodel.FindFaceParam;
 import cn.anytec.security.model.parammodel.IdenfitySnapParam;
 import cn.anytec.security.component.mongo.MongoDBService;
 import cn.anytec.security.service.CameraService;
+import cn.anytec.security.service.GroupPersonService;
 import cn.anytec.security.service.PersonService;
 import cn.anytec.security.model.websocketmodel.FdSnapShot;
 import cn.anytec.security.model.websocketmodel.FrWarning;
@@ -19,6 +21,8 @@ import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -46,9 +50,16 @@ public class FRDataHandler {
     @Autowired
     private PersonService personService;
     @Autowired
+    private GroupPersonService groupPersonService;
+    @Autowired
     private CameraService cameraService;
     @Autowired
     private WSSendHandler wsSendHandler;
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+    @Value("${redisKeys.warningThreshold}")
+    String warningThreshold;
 
     public void recieveSnap(String cameraSdkId, String timestamp, String bbox, MultipartFile photo) {
         LocalDateTime localDateTime = LocalDateTime.parse(timestamp);
@@ -71,6 +82,10 @@ public class FRDataHandler {
         FindFaceParam params = new FindFaceParam();
         params.setMeta(cameraSdkId);
         params.setBbox(bbox);
+        params.setSdkIp(config.getSnapSdkIp());
+        params.setSdkPort(config.getSnapSdkPort());
+        params.setSdkVersion(config.getSnapSdkVersion());
+        params.setSdkToken(config.getSnapSdkToken());
         String[] galleries = new String[]{config.getSnapGallery()};
         params.setGalleries(galleries);
         try {
@@ -106,7 +121,7 @@ public class FRDataHandler {
             snapshotAddition.put("firstEmotion",emotions.get(0));
             snapshotAddition.put("secondEmotion",emotions.get(1));
         }
-        snapshotAddition.put("photoUrl",face.getPhoto());
+        snapshotAddition.put("wholePhoto",face.getPhoto());
         Integer age = Integer.parseInt(face.getAge().toString().split("\\.")[0]);
         snapshotAddition.put("age",age);
         snapshotAddition.put("timestamp", timeModel.getTimestamp());
@@ -120,15 +135,16 @@ public class FRDataHandler {
         map.put("cameraId", camera.getId());
         map.put("cameraSdkId",camera.getSdkId());
         map.put("cameraGroupId", camera.getGroupId());
-//        map.put("location",camera.getLocation());
-        map.put("location", returnLocation());
+        map.put("location",camera.getLocation());
+        //map.put("location", returnLocation());
         return map;
     }
 
     //临时方法，到时候以真正的camera的location为准
     public String returnLocation() {
         List<String> locationList = new ArrayList<>();
-        locationList.add("114.056215,22.539968");
+        //深圳坐标,目前用于在线
+        /*locationList.add("114.056215,22.539968");
         locationList.add("114.062931,22.542524");
         locationList.add("114.062524,22.540166");
         locationList.add("114.052996,22.536698");
@@ -140,7 +156,13 @@ public class FRDataHandler {
         locationList.add("114.067459,22.510019");
         locationList.add("114.086513,22.534993");
         locationList.add("114.050121,22.524132");
-        locationList.add("114.104366,22.546171");
+        locationList.add("114.104366,22.546171");*/
+        //北京坐标,目前用于离线
+      /*  locationList.add("39.907001,116.391378");
+        locationList.add("39.900153,116.397901");
+        locationList.add("39.907857,116.401076");
+        locationList.add("39.901733,116.40554");
+        locationList.add("39.902326,116.420045");*/
         Integer i = new Random().nextInt(locationList.size());
         return locationList.get(i);
     }
@@ -160,9 +182,18 @@ public class FRDataHandler {
     public IdentifyPojo identifyInStaticGallery(String faceUrl) {
         IdentifyPojo identifyPojo = null;
         FindFaceParam param = new FindFaceParam();
-        param.setThreshold(config.getWarningThreshold());
+        Object thresholdObj = redisTemplate.opsForValue().get(warningThreshold);
+        if(thresholdObj != null){
+            param.setThreshold(thresholdObj.toString());
+        }else {
+            param.setThreshold(config.getWarningThreshold());
+        }
         param.setGalleries(new String[]{config.getStaticGallery()});
         param.setPhotoUrl(faceUrl);
+        param.setSdkIp(config.getStaticSdkIp());
+        param.setSdkPort(config.getStaticSdkPort());
+        param.setSdkVersion(config.getStaticSdkVersion());
+        param.setSdkToken(config.getStaticSdkToken());
         identifyPojo = findFaceService.imageIdentify(null, param);
         return identifyPojo;
     }
@@ -225,6 +256,10 @@ public class FRDataHandler {
             warning.setPersonGroupName(person.getGroupName());
             warning.setIdNumber(person.getIdNumber());
             warning.setFaceSdkId(person.getSdkId());
+            TbGroupPerson personGroup = groupPersonService.getGroupPersonById(person.getGroupId().toString()).getData();
+            if(personGroup != null){
+                warning.setColorLabel(personGroup.getColorLabel());
+            }
         }
     }
 
@@ -237,10 +272,8 @@ public class FRDataHandler {
             Map<String, String> sdkMap = getSdkIdConfidenceMap(identifyPojo);
             if (sdkMap.size() > 0) {
                 result = mongoDBService.identifySnap(sdkMap, idenfitySnapParam);
-                return ServerResponse.createBySuccess(result);
-            }else {
-                return ServerResponse.createBySuccess();
             }
+            return ServerResponse.createBySuccess(result);
         }
         return ServerResponse.createByError();
     }
@@ -263,6 +296,10 @@ public class FRDataHandler {
         }
         findFaceParam.setN(config.getSnapIdentifyNumber());
         findFaceParam.setGalleries(new String[]{config.getSnapGallery()});
+        findFaceParam.setSdkIp(config.getSnapSdkIp());
+        findFaceParam.setSdkPort(config.getSnapSdkPort());
+        findFaceParam.setSdkVersion(config.getSnapSdkVersion());
+        findFaceParam.setSdkToken(config.getSnapSdkToken());
         return findFaceParam;
     }
 

@@ -3,7 +3,7 @@ package cn.anytec.security.controller;
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.model.TbPerson;
 import cn.anytec.security.service.PersonService;
-import cn.anytec.security.model.vo.PersonVo;
+import cn.anytec.security.model.vo.PersonVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,8 +18,8 @@ public class PersonController {
 
     @RequestMapping("/add")
     @ResponseBody
-    public ServerResponse add(PersonVo personVo){
-        return personService.add(personVo);
+    public ServerResponse add(PersonVO personVO){
+        return personService.add(personVO);
     }
 
     @RequestMapping("/delete")
@@ -47,7 +47,7 @@ public class PersonController {
 
     @RequestMapping("/update")
     @ResponseBody
-    public ServerResponse update(PersonVo personVo){
-        return personService.update(personVo);
+    public ServerResponse update(PersonVO personVO){
+        return personService.update(personVO);
     }
 }

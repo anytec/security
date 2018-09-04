@@ -2,7 +2,7 @@ package cn.anytec.security.model.vo;
 
 import org.springframework.web.multipart.MultipartFile;
 
-public class PersonVo {
+public class PersonVO {
     private Integer id;
     private String sdkId;
     private String name;

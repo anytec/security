@@ -1,8 +1,8 @@
 package cn.anytec.security.controller;
 
 import cn.anytec.security.common.ServerResponse;
-import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.model.TbGroupCamera;
+import cn.anytec.security.model.vo.CameraVO;
 import cn.anytec.security.service.GroupCameraService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -46,7 +46,7 @@ public class GroupCameraController {
 
     @RequestMapping("/getAllCameras")
     @ResponseBody
-    public ServerResponse<Map<String,List<TbCamera>>> getAllCameras(){
-        return groupCameraService.getAllCameras();
+    public ServerResponse<Map<String,List<CameraVO>>> getAllCameras(@RequestParam(value = "status",required = false)String status){
+        return groupCameraService.getAllCameras(status);
     }
 }
