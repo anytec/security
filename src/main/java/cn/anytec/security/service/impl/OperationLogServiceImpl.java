@@ -1,6 +1,5 @@
 package cn.anytec.security.service.impl;
 
-import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.dao.OperationLogMapper;
 import cn.anytec.security.model.vo.OperationLogVO;
 import cn.anytec.security.model.vo.OperationRecordVO;
@@ -22,22 +21,22 @@ public class OperationLogServiceImpl implements OperationLogService {
     private OperationLogMapper mapper;
 
     @Override
-    public ServerResponse<PageInfo> list(Integer pageNum, Integer pageSize, String firstTime, String lastTime, String logType) {
+    public PageInfo<OperationLogVO> list(Integer pageNum, Integer pageSize, String firstTime, String lastTime, String logType) {
 
         PageHelper.startPage(pageNum, pageSize);
 
         List<OperationLogVO> logs = mapper.list(firstTime, lastTime, logType);
 
-        return ServerResponse.createBySuccess(PageInfo.of(logs));
+        return PageInfo.of(logs);
     }
 
     @Override
-    public ServerResponse<PageInfo> operationRecordList(Integer pageNum, Integer pageSize, String firstTime, String lastTime, String operationType, String uname) {
+    public PageInfo<OperationRecordVO> operationRecordList(Integer pageNum, Integer pageSize, String firstTime, String lastTime, String operationType, String uname) {
 
         PageHelper.startPage(pageNum, pageSize);
 
         List<OperationRecordVO> logs = mapper.operationRecordList(firstTime, lastTime, operationType, uname);
 
-        return ServerResponse.createBySuccess(PageInfo.of(logs));
+        return PageInfo.of(logs);
     }
 }

@@ -39,9 +39,7 @@ public class UserServiceImpl implements UserService {
         // 构造查询
         TbUserExample userExample = new TbUserExample();
         TbUserExample.Criteria criteria = userExample.createCriteria();
-        TbUserExample.Criteria orCriteria = userExample.or();
         criteria.andUnameEqualTo(uname);
-        orCriteria.andAccentEqualTo(uname);
         List<TbUser> users = userMapper.selectByExample(userExample);
 
         // 登录逻辑判断
