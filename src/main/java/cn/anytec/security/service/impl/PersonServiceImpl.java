@@ -11,6 +11,7 @@ import cn.anytec.security.model.TbPersonExample;
 import cn.anytec.security.model.parammodel.FindFaceParam;
 import cn.anytec.security.service.PersonService;
 import cn.anytec.security.model.vo.PersonVO;
+import cn.anytec.security.util.MD5Util;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -28,6 +29,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -46,12 +49,18 @@ public class PersonServiceImpl implements PersonService {
 
     @Value("${file.personPhotos.path}")
     private String personPhotosPath;
+    @Value("${server.ip}")
+    private String ip;
+    @Value("${server.port}")
+    private String port;
 
     public ServerResponse<TbPerson> add(PersonVO personVO) {
         MultipartFile photo = personVO.getPhoto();
         String photoUrl = personVO.getPhotoUrl();
         try {
-            FacePojo facePojo = addSdkFace(photo,photoUrl);
+            FindFaceParam param = getStaticFindFaceParam();
+            param.setPhotoUrl(photoUrl);
+            FacePojo facePojo = addStaticSdkFace(photo,param);
             if(facePojo != null){
                 TbPerson person = parsePersonVo(personVO, facePojo);
                 if (addMySqlFace(person)) {
@@ -64,19 +73,22 @@ public class PersonServiceImpl implements PersonService {
         return ServerResponse.createByErrorMessage("新增person失败");
     }
 
-    public FacePojo addSdkFace(MultipartFile photo,String photoUrl) throws IOException {
-        FindFaceParam param = new FindFaceParam();
-        param.setGalleries(new String[]{config.getStaticGallery()});
-        param.setPhotoUrl(photoUrl);
-        param.setSdkIp(config.getStaticSdkIp());
-        param.setSdkPort(config.getStaticSdkPort());
-        param.setSdkVersion(config.getStaticSdkVersion());
-        param.setSdkToken(config.getStaticSdkToken());
+    private FacePojo addStaticSdkFace(MultipartFile photo, FindFaceParam param) throws IOException {
         if(photo != null){
             return findFaceService.addFace(photo.getBytes(), param);
         }else {
             return findFaceService.addFace(null, param);
         }
+    }
+
+    private FindFaceParam getStaticFindFaceParam(){
+        FindFaceParam param = new FindFaceParam();
+        param.setGalleries(new String[]{config.getStaticGallery()});
+        param.setSdkIp(config.getStaticSdkIp());
+        param.setSdkPort(config.getStaticSdkPort());
+        param.setSdkVersion(config.getStaticSdkVersion());
+        param.setSdkToken(config.getStaticSdkToken());
+        return param;
     }
 
     public boolean addMySqlFace(TbPerson person) {
@@ -129,7 +141,7 @@ public class PersonServiceImpl implements PersonService {
             String sdkId = personVO.getSdkId();
             if (deleteSdkFace(sdkId)) {
                 try{
-                    facePojo = addSdkFace(photo,null);
+                    facePojo = addStaticSdkFace(photo,null);
                 }catch (Exception e){
                     e.printStackTrace();
                 }
@@ -197,35 +209,99 @@ public class PersonServiceImpl implements PersonService {
         return ServerResponse.createBySuccess(pageResult);
     }
 
-/*    public String savePersonPhotos(MultipartFile[] files){
+    /**
+     * 把前端选择的图片文件夹里的图片上传到服务器
+     * @param files
+     * @return
+     */
+    public List<String> uploadPhotos(MultipartFile[] files){
+        List<String> pathList = new ArrayList<>();
         if (files == null || files.length == 0) {
-            return null;
+            logger.info("批量上传的照片数量为0！");
+            return pathList;
         }
         if (personPhotosPath.endsWith("/")) {
             personPhotosPath = personPhotosPath.substring(0, personPhotosPath.length() - 1);
         }
         for (MultipartFile file : files) {
-            String filePath = personPhotosPath + "/" + file.getOriginalFilename();
-            makeDir(filePath);
+            String fileName = file.getOriginalFilename();
+            if(fileName.indexOf("/")>0){
+                fileName = fileName.substring(fileName.indexOf("/")+1);
+            }
+            String personName = fileName.split("\\.")[0];
+            String newFileName = newFileName(fileName);
+            String filePath = personPhotosPath + "/" + newFileName;
             File photo = new File(filePath);
             try {
                 file.transferTo(photo);
             } catch (IllegalStateException | IOException e) {
                 e.printStackTrace();
+                return null;
             }
+            String photoPath = "http://"+ip+":"+port+"/static/" + newFileName + "#pn#" + personName;
+            pathList.add(photoPath);
         }
-        return "";
+        return pathList;
     }
 
-    private static void makeDir(String filePath) {
-        if (filePath.lastIndexOf('/') > 0) {
-            String dirPath = filePath.substring(0, filePath.lastIndexOf('/'));
-            File dir = new File(dirPath);
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
-        }*/
+    /**
+     * MD5加密一个文件名
+     * @param fileName
+     * @return
+     */
+    public static String newFileName(String fileName){
+        String prefix = fileName.substring(fileName.lastIndexOf("."));
+        return MD5Util.MD5EncodeUtf8(fileName + System.currentTimeMillis()) + prefix;
+    }
 
+    /**
+     * 照片入sdk和mysql
+     * @param photoPathList 照片路径和照片名称用“#pn#”间隔,组成的List<String>
+     * @param personGroupId 人员组id
+     * @return
+     */
+    public ServerResponse addPhotos(List<String> photoPathList, String personGroupId, String personGroupName){
+        String msg = "";
+        if(!CollectionUtils.isEmpty(photoPathList)){
+            for(int i=0; i<photoPathList.size(); i++){
+                String path = photoPathList.get(i);
+                String photoPath = path.split("#pn#")[0];
+                String personName = path.split("#pn#")[1];
+                FindFaceParam findFaceParam = getStaticFindFaceParam();
+                findFaceParam.setPhotoUrl(photoPath);
+                findFaceParam.setMeta(personName);
+                FacePojo facePojo = findFaceService.addFace(null,findFaceParam);
+                if(facePojo != null){
+                    PersonVO personVO = new PersonVO();
+                    personVO.setGroupId(Integer.parseInt(personGroupId));
+                    personVO.setGroupName(personGroupName);
+                    personVO.setName(personName);
+                    personVO.setRemarks("批量录入");
+                    TbPerson person = parsePersonVo(personVO, facePojo);
+                    if (!addMySqlFace(person)) {
+                        return ServerResponse.createBySuccess("批量上传照片发生错误", person);
+                    }
+                }else {
+                    if(i == photoPathList.size()-1){
+                        msg += personName;
+                    }else {
+                        msg += personName+",";
+                    }
+                }
+            }
+        }
+        if(!StringUtils.isEmpty(msg)){
+            return ServerResponse.createBySuccessMessage("上传不成功的照片： "+msg);
+        }
+        return ServerResponse.createBySuccessMessage("批量上传照片成功");
+    }
+
+    /**
+     * 把personVO和facePojo里的字段填充到TbPerson
+     * @param personVO
+     * @param facePojo
+     * @return
+     */
     public TbPerson parsePersonVo(PersonVO personVO, FacePojo facePojo) {
         TbPerson person = new TbPerson();
         if(personVO.getId() != null){

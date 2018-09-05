@@ -13,9 +13,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -32,6 +35,8 @@ public class MainController {
     private PersonService personService;
     @Autowired
     private RedisTemplate redisTemplate;
+    @Autowired
+    private GeneralConfig config;
 
     @Value("${redisKeys.warningThreshold}")
     String warningThreshold;
@@ -60,6 +65,19 @@ public class MainController {
         return frDataHandler.identifySnap(param);
     }
 
+    @RequestMapping("/getWarningThreshold")
+    @ResponseBody
+    public ServerResponse getWarningThreshold(){
+        double thresholdValue;
+        Object thresholdObj = redisTemplate.opsForValue().get(warningThreshold);
+        if(thresholdObj != null){
+            thresholdValue = ((double)thresholdObj)*100;
+        }else {
+            thresholdValue = Double.parseDouble(config.getWarningThreshold())*100;
+        }
+        return ServerResponse.createBySuccess(thresholdValue);
+    }
+
     @RequestMapping("/setWarningThreshold")
     @ResponseBody
     public ServerResponse setWarningThreshold(@RequestParam("threshold") String threshold){
@@ -74,11 +92,25 @@ public class MainController {
         return ServerResponse.createByErrorMessage("传入的threshold值有误： "+threshold);
     }
 
-    /*@RequestMapping("/uploadPhotos")
+    @RequestMapping("/uploadPhotos")
     @ResponseBody
-    public String uploadPhotos(MultipartFile[] photos) {
-        personService.savePersonPhotos(photos);
-        return "ok";
-    }*/
+    public ServerResponse uploadPhotos(MultipartFile[] photos) {
+        List<String> photoPathList = personService.uploadPhotos(photos);
+        if(photoPathList.size()==0){
+            return ServerResponse.createByErrorMessage("批量上传的照片数量为0！");
+        }else if(!CollectionUtils.isEmpty(photoPathList)){
+            return ServerResponse.createBySuccess(photoPathList);
+        }else {
+            return ServerResponse.createByErrorMessage("批量上传照片发生错误！");
+        }
+    }
+
+    @RequestMapping("/addPhotos")
+    @ResponseBody
+    public ServerResponse addPhotos(@RequestParam("photoPathList")List<String> photoPathList,
+                                    @RequestParam("personGroupId")String personGroupId,
+                                    @RequestParam("personGroupName")String personGroupName) {
+        return personService.addPhotos(photoPathList,personGroupId,personGroupName);
+    }
 
 }

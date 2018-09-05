@@ -48,7 +48,6 @@ public class HistoryController {
     @ResponseBody
     public JSONObject getSnapTimes(){
         JSONObject result = new JSONObject();
-        //DateTimeFormatter time = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.of("UTC"));
         LocalDateTime localDateTime = LocalDateTime.now();
         ZonedDateTime zonedDateTime= ZonedDateTime.of(localDateTime, ZoneId.systemDefault()).withZoneSameInstant(ZoneId.of("UTC"));
         TimeModel now = new TimeModel(zonedDateTime.toLocalDateTime());
