@@ -23,12 +23,12 @@ public class DataController {
 
     @RequestMapping("/snapCounting")
     @ResponseBody
-    public ServerResponse sanpCounting(){
-        JSONObject result = mongoDBService.sanpCounting();
+    public ServerResponse snapCounting(){
+        JSONObject result = mongoDBService.snapCounting();
         if(result != null){
             return ServerResponse.createBySuccess(result);
         }
-        return ServerResponse.createByErrorMessage("sanpCounting发生错误！");
+        return ServerResponse.createByErrorMessage("snapCounting发生错误！");
     }
 
     //改peopleCounting

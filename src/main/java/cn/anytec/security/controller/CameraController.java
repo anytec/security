@@ -1,6 +1,8 @@
 package cn.anytec.security.controller;
 
 import cn.anytec.security.common.ServerResponse;
+import cn.anytec.security.component.ipcamera.ipcService.IPCOperations;
+import cn.anytec.security.core.annotion.OperLog;
 import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.service.CameraService;
 import com.github.pagehelper.PageInfo;
@@ -8,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 //@RequestMapping("/camera")
@@ -15,17 +18,24 @@ public class CameraController {
 
     @Autowired
     private CameraService cameraService;
+    @Autowired
+    private IPCOperations ipcOperations;
 
+
+    @OperLog(value = "添加设备", key="id,name")
     @PostMapping("/camera/add")
     public ServerResponse add(TbCamera camera){
         return cameraService.add(camera);
     }
+
+    @OperLog(value = "删除设备", key = "cameraIds")
     @RequestMapping("/camera/delete")
     @ResponseBody
     public ServerResponse delete(@RequestParam(value = "cameraIds") String cameraIds){
         return cameraService.delete(cameraIds);
     }
 
+//    @OperLog(value = "查询设备列表", key = "type")
     @RequestMapping("/camera/list")
     @ResponseBody
     public ServerResponse list(@RequestParam(value = "pageNum",defaultValue = "1") int pageNum, @RequestParam(value = "pageSize",defaultValue = "10") int pageSize,
@@ -41,8 +51,10 @@ public class CameraController {
         return ServerResponse.createBySuccess(pageResult);
     }
 
+    @OperLog(value = "修改设备信息", key="id,name")
     @RequestMapping("/camera/update")
     public ServerResponse update(TbCamera camera){
+        cameraService.getCameraInfo(camera.getId());
         return cameraService.update(camera);
     }
 
@@ -65,6 +77,21 @@ public class CameraController {
     @RequestMapping("/camera/getServerLabel")
     public ServerResponse getServerLabel(){
         return cameraService.getServerLabel();
+    }
+
+    @RequestMapping("/getCaptureCameras")
+    public Map<String, String> getCaptureCameras(){
+        return ipcOperations.getCaptureCameras();
+    }
+
+    @RequestMapping("/activeCaptureCamera")
+    public boolean activeCaptureCamera(@RequestParam(value = "macAddress")String macAddress, @RequestParam(value = "ipcAddress")String ipcAddress){
+        return ipcOperations.activeCaptureCamera(macAddress,ipcAddress);
+    }
+
+    @RequestMapping("/invalidCaptureCamera")
+    public boolean invalidCaptureCamera(@RequestParam(value = "macAddress")String macAddress, @RequestParam(value = "ipcAddress")String ipcAddress){
+        return ipcOperations.invalidCaptureCamera(macAddress,ipcAddress);
     }
 
 }

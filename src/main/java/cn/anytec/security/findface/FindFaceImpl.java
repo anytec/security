@@ -39,13 +39,16 @@ public class FindFaceImpl implements FindFaceService {
     private GeneralConfig config;
 
 
-    private HttpHeaders requestHeaders = null;
+    private HttpHeaders snapRequestHeaders = null;
+    private HttpHeaders staticHeaders = null;
     private static Gson gson = new Gson();
 
     @PostConstruct
     void init() {
-        requestHeaders = new HttpHeaders();
-        requestHeaders.add("Authorization", "token " + config.getSdkToken());
+        snapRequestHeaders = new HttpHeaders();
+        snapRequestHeaders.add("Authorization", "token " + config.getSnapSdkToken());
+        staticHeaders = new HttpHeaders();
+        staticHeaders.add("Authorization", "token " + config.getStaticSdkToken());
     }
 
     @Override
@@ -58,8 +61,8 @@ public class FindFaceImpl implements FindFaceService {
             }
         };
         requestParams.add("photo", fileResource);
-        String url = "http://" + config.getSdkIp() + ":" + config.getSdkPort() + "/" + config.getSdkVersion() + "/detect";
-        HttpEntity<MultiValueMap<String, Object>> httpEntity = new HttpEntity<>(requestParams, requestHeaders);
+        String url = "http://" + config.getSnapSdkIp() + ":" + config.getSnapSdkPort() + "/" + config.getSnapSdkVersion() + "/detect";
+        HttpEntity<MultiValueMap<String, Object>> httpEntity = new HttpEntity<>(requestParams, snapRequestHeaders);
         ResponseEntity<String> responseEntity;
         try {
             responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, String.class);
@@ -95,8 +98,8 @@ public class FindFaceImpl implements FindFaceService {
         };
         requestParams.add("photo1", fileResource1);
         requestParams.add("photo2", fileResource2);
-        String url = "http://" + config.getSdkIp() + ":" + config.getSdkPort() + "/" + config.getSdkVersion() + "/verify";
-        HttpEntity<MultiValueMap<String, Object>> httpEntity = new HttpEntity<>(requestParams,requestHeaders);
+        String url = "http://" + config.getSnapSdkIp() + ":" + config.getSnapSdkPort() + "/" + config.getSnapSdkVersion() + "/verify";
+        HttpEntity<MultiValueMap<String, Object>> httpEntity = new HttpEntity<>(requestParams,snapRequestHeaders);
         ResponseEntity<String> responseEntity;
         try {
             responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, String.class);
@@ -149,8 +152,10 @@ public class FindFaceImpl implements FindFaceService {
         } else {
             identifyUri = "/identify";
         }
-        String url = "http://" + config.getSdkIp() + ":" + config.getSdkPort() + "/" + config.getSdkVersion() + identifyUri;
-        HttpEntity<MultiValueMap<String, Object>> httpEntity = new HttpEntity<>(requestParams,requestHeaders);
+        String url = "http://" + param.getSdkIp() + ":" + param.getSdkPort() + "/" + param.getSdkVersion() + identifyUri;
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "token " + param.getSdkToken());
+        HttpEntity<MultiValueMap<String, Object>> httpEntity = new HttpEntity<>(requestParams,headers);
         ResponseEntity<String> responseEntity;
         try {
             responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, String.class);
@@ -206,12 +211,12 @@ public class FindFaceImpl implements FindFaceService {
             multipartEntityBuilder.addTextBody("galleries",galleriesString.toString());
         }
         entity = multipartEntityBuilder.build();
-        String url = "http://" + config.getSdkIp() + ":" + config.getSdkPort() + "/" + config.getSdkVersion() + "/face";
+        String url = "http://" + param.getSdkIp() + ":" + param.getSdkPort() + "/" + param.getSdkVersion() + "/face";
         try {
             response = Request.Post(url)
                     .connectTimeout(10000)
                     .socketTimeout(30000)
-                    .addHeader("Authorization", "Token " + config.getSdkToken())
+                    .addHeader("Authorization", "Token " + param.getSdkToken())
                     .body(entity)
                     .execute().returnResponse();
             String reply = EntityUtils.toString(response.getEntity());
@@ -301,8 +306,8 @@ public class FindFaceImpl implements FindFaceService {
     @Override
     public boolean deleteFace(String sdkId) {
         try {
-            String url = "http://" + config.getSdkIp() + ":" + config.getSdkPort() + "/" + config.getSdkVersion() + "/face/id/" + sdkId;
-            HttpEntity<MultiValueMap<String, Object>> httpEntity = new HttpEntity<>(null,requestHeaders);
+            String url = "http://" + config.getStaticSdkIp() + ":" + config.getStaticSdkPort() + "/" + config.getStaticSdkVersion() + "/face/id/" + sdkId;
+            HttpEntity<MultiValueMap<String, Object>> httpEntity = new HttpEntity<>(null,staticHeaders);
             ResponseEntity<String> responseEntity = restTemplate.exchange(url, HttpMethod.DELETE, httpEntity, String.class);
             int statusCode = responseEntity.getStatusCodeValue();
             if (statusCode == 204) {
@@ -343,8 +348,8 @@ public class FindFaceImpl implements FindFaceService {
 
     @Override
     public String getCamera() {
-        org.springframework.http.HttpEntity<String> requestEntity = new org.springframework.http.HttpEntity<String>(null, requestHeaders);
-        ResponseEntity<String> response = restTemplate.exchange("http://" + config.getSdkIp() + ":" + config.getSdkPort() + "/" + config.getSdkVersion() + "/camera", HttpMethod.GET, requestEntity, String.class);
+        org.springframework.http.HttpEntity<String> requestEntity = new org.springframework.http.HttpEntity<String>(null, staticHeaders);
+        ResponseEntity<String> response = restTemplate.exchange("http://" + config.getStaticSdkIp() + ":" + config.getStaticSdkPort() + "/" + config.getStaticSdkVersion() + "/camera", HttpMethod.GET, requestEntity, String.class);
         String result = response.getBody();
         logger.info("sdk getCammera : " + result);
         return result;

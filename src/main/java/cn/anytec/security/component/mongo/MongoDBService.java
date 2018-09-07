@@ -1,6 +1,5 @@
 package cn.anytec.security.component.mongo;
 
-
 import cn.anytec.security.model.parammodel.IdenfitySnapParam;
 import com.alibaba.fastjson.JSONObject;
 import org.springframework.stereotype.Service;
@@ -19,7 +18,7 @@ public interface MongoDBService {
 
     JSONObject identifySnap(Map<String,String> sdkMap, IdenfitySnapParam idenfitySnapParam);
 
-    JSONObject sanpCounting();
+    JSONObject snapCounting();
     
     JSONObject peopleCounting(Map<String, String[]> paramMap);
 
@@ -28,6 +27,8 @@ public interface MongoDBService {
     long getNumberOfWarningByTime(Long start_timestamp,Long end_timestamp);
 
     long getNumberOfSnapshotByTime(Long start_timestamp,Long end_timestamp);
+
+    long getSnapCountByCameraSdkId(String cameraSdkId);
 
 
 

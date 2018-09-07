@@ -1,5 +1,8 @@
 server:
+  ip: 192.168.10.158
   port: 9999
+sanpCamera:
+  port: 9998
 spring:
   application:
     name: Security
@@ -12,29 +15,54 @@ spring:
     admin:
       client:
         url: http://localhost:8080
-        service-base-url: http://192.168.10.212
+        service-base-url: http://192.168.10.158
   resources:
-    static-locations: classpath:/static/
+    static-locations: classpath:/static/,file:${file.map.path},file:${file.personPhotos.path}
+
+file:
+  map:
+    path: /home/n-tech-zhao/map/
+  personPhotos:
+    path: /home/n-tech-zhao/img/
 
 mybatis:
   mapperLocations: classpath:mapper/*.xml
-sdk:
-  hostIp: 192.168.10.212
-  port: 8000
-  token: F3Pv-TNLh
-  url: http://192.168.10.212:8000
+
 #  hostIp: 192.168.10.132
 #  port: 8000
 #  token: GxSW-JKSD
+#snapSdk:
+#  hostIp: 192.168.10.212
+#  port: 8000
+#  token: F3Pv-TNLh
+#  url: http://192.168.10.212:8000
+#  version: v1
+#  identifyType: biggest
+#  snapGallery: 158Snap
+#  snapIdentifyNumber: 10
+#  emotionsOpen: true
+#  genderOpen: true
+#  ageOpen: true
+snapSdk:
+  hostIp: 192.168.10.213
+  port: 8000
+  token: e3Z7-9Jbf
+  url: http://192.168.10.213:8000
   version: v1
   identifyType: biggest
-  snapGallery: 126Snap
-  staticGallery: 126Static
-  warningThreshold: 0.7
+  snapGallery: default
   snapIdentifyNumber: 10
   emotionsOpen: true
   genderOpen: true
   ageOpen: true
+staticSdk:
+  hostIp: 192.168.10.212
+  port: 8000
+  token: F3Pv-TNLh
+  url: http://192.168.10.212:8000
+  version: v1
+  warningThreshold: 0.7
+  staticGallery: 62Static
 
 redisKeys:
   cameraBySdkId: getCameraBySdkId
@@ -42,6 +70,8 @@ redisKeys:
   peronBySdkId: getPersonBySdkId
   personGroupById: getPersonGroupById
   personCounting: personCounting
+  warningThreshold: warningThrehsold
+  captureCameras: captureCameras
 # mongodb
 mongo:
   host: 127.0.0.1
@@ -51,7 +81,7 @@ mongo:
 
 
 constant:
-  camera: ${sdk.url}/${sdk.version}/camera
+  camera: ${staticSdk.url}/${staticSdk.version}/camera
   serverLabel: ${server.port}-security
 
 camera:
@@ -82,3 +112,8 @@ management:
   endpoint:
     health:
       show-details: always
+# 离线地图用到
+mapper:
+    mappers:
+         - cn.anytec.security.dao.MyMapper
+    not-empty: false

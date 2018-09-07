@@ -70,5 +70,6 @@
         <if test="uname != null and uname != ''">
             AND u.uname LIKE concat('%', #{uname}, '%')
         </if>
+        ORDER BY createtime DESC
     </select>
 </mapper>

@@ -5,8 +5,8 @@ import java.util.List;
 public class FrWarning {
 
     private String snapshotUrl;
+    private String wholePhoto;
     private String faceUrl;
-    private String photoUrl;
     private Double confidence;
     private String personName;
     private String gender;
@@ -23,11 +23,21 @@ public class FrWarning {
     private String cameraName;
     private String cameraGroupName;
     private Integer warningOfWeek;
+    private String colorLabel;
 
-    public FrWarning(String snapshotUrl, String faceUrl, String photoUrl){
+    public FrWarning(String snapshotUrl, String faceUrl, String wholePhoto) {
         this.faceUrl = faceUrl;
         this.snapshotUrl = snapshotUrl;
-        this.photoUrl = photoUrl;
+        this.wholePhoto = wholePhoto;
+    }
+
+
+    public String getWholePhoto() {
+        return wholePhoto;
+    }
+
+    public void setWholePhoto(String wholePhoto) {
+        this.wholePhoto = wholePhoto;
     }
 
     public Double getConfidence() {
@@ -164,5 +174,13 @@ public class FrWarning {
 
     public void setFaceSdkId(String faceSdkId) {
         this.faceSdkId = faceSdkId;
+    }
+
+    public String getColorLabel() {
+        return colorLabel;
+    }
+
+    public void setColorLabel(String colorLabel) {
+        this.colorLabel = colorLabel;
     }
 }

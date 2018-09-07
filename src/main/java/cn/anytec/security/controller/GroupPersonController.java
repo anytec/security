@@ -1,6 +1,7 @@
 package cn.anytec.security.controller;
 
 import cn.anytec.security.common.ServerResponse;
+import cn.anytec.security.core.annotion.OperLog;
 import cn.anytec.security.model.TbGroupPerson;
 import cn.anytec.security.service.GroupPersonService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,12 +16,14 @@ public class GroupPersonController {
     @Autowired
     private GroupPersonService groupPersonService;
 
+    @OperLog(value = "添加人员底库", key="id,name")
     @RequestMapping("/add")
     @ResponseBody
     public ServerResponse add(TbGroupPerson groupPerson){
         return groupPersonService.add(groupPerson);
     }
 
+    @OperLog(value = "删除人员底库", key = "groupPersonIds")
     @RequestMapping("/delete")
     @ResponseBody
     public ServerResponse delete(@RequestParam(value = "groupPersonIds") String groupPersonIds){
@@ -34,9 +37,11 @@ public class GroupPersonController {
         return groupPersonService.list(pageNum,pageSize,groupName);
     }
 
+    @OperLog(value = "修改人员底库信息", key="id,name")
     @RequestMapping("/update")
     @ResponseBody
     public ServerResponse update(TbGroupPerson groupPerson){
+        groupPersonService.getPersonGroupInfo(groupPerson.getId());
         return groupPersonService.update(groupPerson);
     }
 }

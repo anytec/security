@@ -3,9 +3,11 @@ package cn.anytec.security.component.mongo;
 import cn.anytec.security.config.GeneralConfig;
 import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.model.TbGroupCamera;
+import cn.anytec.security.model.TbGroupPerson;
 import cn.anytec.security.model.parammodel.IdenfitySnapParam;
 import cn.anytec.security.service.CameraService;
 import cn.anytec.security.service.GroupCameraService;
+import cn.anytec.security.service.GroupPersonService;
 import com.alibaba.fastjson.JSONObject;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -25,6 +27,7 @@ import javax.annotation.PostConstruct;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 @Service
@@ -35,6 +38,8 @@ public class MongoDBServiceImpl implements MongoDBService {
     private CameraService cameraService;
     @Autowired
     private GroupCameraService groupCameraService;
+    @Autowired
+    private GroupPersonService groupPersonService;
     @Autowired
     private RedisTemplate redisTemplate;
 
@@ -107,8 +112,8 @@ public class MongoDBServiceImpl implements MongoDBService {
                 dbObject.put("cameraGroupId", cameraGroupId);
             }
         }
-        //cameraSdkId条件
         insertCameraQuery(paramMap,dbObject);
+        //faceSdkId条件
         if (paramMap.containsKey("faceSdkId")) {
             String faceSdkId = paramMap.get("faceSdkId")[0];
             if (!StringUtils.isEmpty(faceSdkId)) {
@@ -171,8 +176,13 @@ public class MongoDBServiceImpl implements MongoDBService {
                 dbObject.put("idNumber", idNumberPattern);
             }
         }
-        //cameraSdkId条件
-        insertCameraQuery(paramMap,dbObject);
+        //faceSdkId条件
+        if (paramMap.containsKey("faceSdkId")) {
+            String faceSdkId = paramMap.get("faceSdkId")[0];
+            if (!StringUtils.isEmpty(faceSdkId)) {
+                dbObject.put("faceSdkId", faceSdkId);
+            }
+        }
         //cameraGroupId条件
         if (paramMap.containsKey("cameraGroupId")) {
             Integer cameraGroupId = Integer.parseInt(paramMap.get("cameraGroupId")[0]);
@@ -180,6 +190,8 @@ public class MongoDBServiceImpl implements MongoDBService {
                 dbObject.put("cameraGroupId", cameraGroupId);
             }
         }
+        //cameraSdkId条件
+        insertCameraQuery(paramMap,dbObject);
         List<JSONObject> dataList = null;
         dataList = getResultJson(warningFaceCollection.find(dbObject).skip(pageNum * pageSize).limit(pageSize).sort(new BasicDBObject("timestamp", -1)));
         insertCameraData(dataList);
@@ -267,6 +279,7 @@ public class MongoDBServiceImpl implements MongoDBService {
             }
         }
         List<JSONObject> dataList = getResultJson(snapshotCollection.find(dbObject).sort(new BasicDBObject("timestamp", -1)));
+        Map<String,Integer> cameraSnapCount = new HashMap<>();
         for (JSONObject data : dataList) {
             String sdkId = data.get("faceSdkId").toString();
             if (sdkMap.containsKey(sdkId)) {
@@ -277,6 +290,16 @@ public class MongoDBServiceImpl implements MongoDBService {
                 TbCamera camera = cameraService.getCameraBySdkId(cameraSdkId);
                 data.put("cameraName", camera.getName());
                 data.put("cameraGroupName", camera.getGroupName());
+                data.put("cameraStatus",camera.getCameraStatus());
+            }
+            if(cameraSnapCount.containsKey(cameraSdkId)){
+                data.put("snapCount",Integer.parseInt(cameraSnapCount.get(cameraSdkId).toString()));
+            }else {
+                BasicDBObject cameraDbObject = new BasicDBObject();
+                cameraDbObject.put("cameraSdkId",cameraSdkId);
+                Integer snapCount = Integer.parseInt(snapshotCollection.count(cameraDbObject)+"");
+                data.put("snapCount",snapCount);
+                cameraSnapCount.put(cameraSdkId,snapCount);
             }
         }
         Integer count = Integer.parseInt(snapshotCollection.count(dbObject) + "");
@@ -285,7 +308,7 @@ public class MongoDBServiceImpl implements MongoDBService {
         return result;
     }
 
-    public JSONObject sanpCounting(){
+    public JSONObject snapCounting(){
         JSONObject result = new JSONObject();
         Integer snapCount = Integer.parseInt(snapshotCollection.count() + "");
         Integer warningCount = Integer.parseInt(warningFaceCollection.count() + "");
@@ -321,7 +344,10 @@ public class MongoDBServiceImpl implements MongoDBService {
                     }
                     countList.add(total+"");
                     String countStr = String.join(",",countList);
-                    redisTemplate.opsForHash().put(personCounting, key, countStr);
+                    if(!day.equals(getToday())){
+                        redisTemplate.opsForHash().put(personCounting, key, countStr);
+                        redisTemplate.expire(personCounting, 1, TimeUnit.DAYS);
+                    }
                 }
                 JSONObject cameraCountList = new JSONObject();
                 cameraCountList.put(cammeraName, countList);
@@ -368,6 +394,12 @@ public class MongoDBServiceImpl implements MongoDBService {
             dayList.add(day);
         }
         return dayList;
+    }
+
+    private String getToday(){
+        Calendar calendar = Calendar.getInstance();
+        Date date = calendar.getTime();
+        return format.format(date);
     }
 
     private List<TbCamera> getCameraList(Map<String, String[]> paramMap) {
@@ -551,6 +583,12 @@ public class MongoDBServiceImpl implements MongoDBService {
             return snapshotCollection.count(dbObject);
         }
         return -1;
+    }
+
+    public long getSnapCountByCameraSdkId(String cameraSdkId){
+        BasicDBObject dbObject = new BasicDBObject();
+        dbObject.put("cameraSdkId",cameraSdkId);
+        return snapshotCollection.count(dbObject);
     }
 
     private BasicDBObject getTimeDBObject(Map<String, String[]> paramMap) {

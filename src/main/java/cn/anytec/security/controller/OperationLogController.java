@@ -22,7 +22,7 @@ public class OperationLogController {
     private OperationLogService logService;
 
     @Permission(value = "查询所有日志", method = PermissionType.IS_ADMIN)
-    @OperLog(value = "查询所有日志")
+    //@OperLog(value = "查询所有日志")
     @GetMapping("list")
     public ServerResponse list(@RequestParam(value = "pageNum",defaultValue = "1") Integer pageNum,
                                @RequestParam(value = "pageSize",defaultValue = "10") Integer pageSize,
@@ -35,7 +35,7 @@ public class OperationLogController {
     }
 
     @Permission(value = "查询所有业务日志", method = PermissionType.IS_ADMIN)
-    @OperLog(value = "查询所有业务日志", key = "pageNum,pageSize,firstTime,lastTime,operationType,uname")
+    //@OperLog(value = "查询所有业务日志", key = "pageNum,pageSize,firstTime,lastTime,operationType,uname")
     @GetMapping("operationRecordList")
     public ServerResponse operationRecordList(@RequestParam(value = "pageNum",defaultValue = "1") Integer pageNum,
                                @RequestParam(value = "pageSize",defaultValue = "10") Integer pageSize,
