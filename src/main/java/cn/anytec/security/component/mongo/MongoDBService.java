@@ -1,6 +1,5 @@
 package cn.anytec.security.component.mongo;
 
-
 import cn.anytec.security.model.parammodel.IdenfitySnapParam;
 import com.alibaba.fastjson.JSONObject;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,7 @@
 package cn.anytec.security.controller;
 
 import cn.anytec.security.common.ServerResponse;
+import cn.anytec.security.core.annotion.OperLog;
 import cn.anytec.security.model.TbPerson;
 import cn.anytec.security.service.PersonService;
 import cn.anytec.security.model.vo.PersonVO;
@@ -16,15 +17,17 @@ public class PersonController {
     @Autowired
     private PersonService personService;
 
+    @OperLog(value = "新增底库人员", key="id,name")
     @RequestMapping("/add")
     @ResponseBody
     public ServerResponse add(PersonVO personVO){
         return personService.add(personVO);
     }
 
+    @OperLog(value = "删除底库人员", key = "personSdkIds")
     @RequestMapping("/delete")
     @ResponseBody
-    public ServerResponse delete(String personSdkIds){
+    public ServerResponse delete(@RequestParam(value = "personSdkIds")String personSdkIds){
         return personService.delete(personSdkIds);
     }
 
@@ -45,6 +48,7 @@ public class PersonController {
         return personService.list(pageNum,pageSize,tbPerson);
     }
 
+    @OperLog(value = "修改底库人员信息", key="id,name")
     @RequestMapping("/update")
     @ResponseBody
     public ServerResponse update(PersonVO personVO){

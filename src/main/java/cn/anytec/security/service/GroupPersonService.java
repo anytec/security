@@ -5,6 +5,7 @@ import cn.anytec.security.model.TbGroupPerson;
 import com.github.pagehelper.PageInfo;
 
 public interface GroupPersonService {
+    TbGroupPerson getPersonGroupInfo(Integer personGroupId);
     ServerResponse add(TbGroupPerson groupPerson);
     ServerResponse<String> delete(String groupPersonIds);
     ServerResponse update(TbGroupPerson groupPerson);

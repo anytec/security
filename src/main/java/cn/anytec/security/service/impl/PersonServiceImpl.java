@@ -2,6 +2,7 @@ package cn.anytec.security.service.impl;
 
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.dao.TbPersonMapper;
 import cn.anytec.security.findface.FindFaceService;
 import cn.anytec.security.findface.model.FacePojo;
@@ -54,6 +55,12 @@ public class PersonServiceImpl implements PersonService {
     @Value("${server.port}")
     private String port;
 
+    public TbPerson getPersonInfo(Integer personId){
+        TbPerson person = personMapper.selectByPrimaryKey(personId);
+        LogObjectHolder.me().set(person);
+        return person;
+    }
+
     public ServerResponse<TbPerson> add(PersonVO personVO) {
         MultipartFile photo = personVO.getPhoto();
         String photoUrl = personVO.getPhotoUrl();
@@ -64,13 +71,13 @@ public class PersonServiceImpl implements PersonService {
             if(facePojo != null){
                 TbPerson person = parsePersonVo(personVO, facePojo);
                 if (addMySqlFace(person)) {
-                    return ServerResponse.createBySuccess("新增person成功", person);
+                    return ServerResponse.createBySuccess("添加person成功", person);
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return ServerResponse.createByErrorMessage("新增person失败");
+        return ServerResponse.createByErrorMessage("添加person失败");
     }
 
     private FacePojo addStaticSdkFace(MultipartFile photo, FindFaceParam param) throws IOException {
@@ -149,9 +156,19 @@ public class PersonServiceImpl implements PersonService {
         }
         TbPerson person = parsePersonVo(personVO, facePojo);
         if(updateMysqlFace(person)){
+            TbPerson tbPerson = personMapper.selectByPrimaryKey(person.getId());
+            removeRedisPerson(tbPerson);
             return ServerResponse.createBySuccessMessage("更新person信息成功");
         }
         return ServerResponse.createByErrorMessage("更新person信息失败");
+    }
+
+    private void removeRedisPerson(TbPerson tbPerson){
+        String redisKey = config.getPeronBySdkId();
+        String personSdkId = tbPerson.getSdkId();
+        if (redisTemplate.opsForHash().hasKey(redisKey, personSdkId)) {
+            redisTemplate.opsForHash().delete(redisKey,personSdkId);
+        }
     }
 
     public boolean updateMysqlFace(TbPerson person) {
@@ -293,7 +310,7 @@ public class PersonServiceImpl implements PersonService {
         if(!StringUtils.isEmpty(msg)){
             return ServerResponse.createBySuccessMessage("上传不成功的照片： "+msg);
         }
-        return ServerResponse.createBySuccessMessage("批量上传照片成功");
+        return ServerResponse.createBySuccessMessage("批量上传照片成功,照片数量："+photoPathList.size());
     }
 
     /**

@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface PersonService {
+    TbPerson getPersonInfo(Integer personId);
     ServerResponse add(PersonVO personVO);
     ServerResponse<String> delete(String personSdkIds);
     ServerResponse update(PersonVO personVO);

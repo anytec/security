@@ -174,7 +174,7 @@ public class FRDataHandler {
         long snapshot_start_timestamp = System.currentTimeMillis() - 1000 * 60 * (hour * 60 + minute);
         long snapshotOfDay = mongoDBService.getNumberOfSnapshotByTime(snapshot_start_timestamp, null);
         if (snapshotOfDay != -1) {
-            wsSendHandler.sendSnapshotOfDay(111);
+            wsSendHandler.sendSnapshotOfDay(snapshotOfDay);
         }
     }
 

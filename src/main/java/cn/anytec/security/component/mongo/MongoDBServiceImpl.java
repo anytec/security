@@ -183,8 +183,6 @@ public class MongoDBServiceImpl implements MongoDBService {
                 dbObject.put("faceSdkId", faceSdkId);
             }
         }
-        //cameraSdkId条件
-        insertCameraQuery(paramMap,dbObject);
         //cameraGroupId条件
         if (paramMap.containsKey("cameraGroupId")) {
             Integer cameraGroupId = Integer.parseInt(paramMap.get("cameraGroupId")[0]);
@@ -192,6 +190,8 @@ public class MongoDBServiceImpl implements MongoDBService {
                 dbObject.put("cameraGroupId", cameraGroupId);
             }
         }
+        //cameraSdkId条件
+        insertCameraQuery(paramMap,dbObject);
         List<JSONObject> dataList = null;
         dataList = getResultJson(warningFaceCollection.find(dbObject).skip(pageNum * pageSize).limit(pageSize).sort(new BasicDBObject("timestamp", -1)));
         insertCameraData(dataList);

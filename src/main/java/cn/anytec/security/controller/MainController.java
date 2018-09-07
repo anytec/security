@@ -7,6 +7,7 @@ import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.model.parammodel.IdenfitySnapParam;
 import cn.anytec.security.service.CameraService;
 import cn.anytec.security.service.PersonService;
+import com.sun.tools.javac.util.Convert;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,12 +69,12 @@ public class MainController {
     @RequestMapping("/getWarningThreshold")
     @ResponseBody
     public ServerResponse getWarningThreshold(){
-        double thresholdValue;
-        Object thresholdObj = redisTemplate.opsForValue().get(warningThreshold);
-        if(thresholdObj != null){
-            thresholdValue = ((double)thresholdObj)*100;
+        int thresholdValue;
+        String threshold = (String)redisTemplate.opsForValue().get(warningThreshold);
+        if(!StringUtils.isEmpty(threshold)){
+            thresholdValue = (int)((Double.parseDouble(threshold))*100);
         }else {
-            thresholdValue = Double.parseDouble(config.getWarningThreshold())*100;
+            thresholdValue = (int)(Double.parseDouble(config.getWarningThreshold())*100);
         }
         return ServerResponse.createBySuccess(thresholdValue);
     }
@@ -85,7 +86,7 @@ public class MainController {
             double thresholdValue = Double.parseDouble(threshold);
             if(thresholdValue > 1){
                 thresholdValue = thresholdValue/100;
-                redisTemplate.opsForValue().set(warningThreshold,thresholdValue,1, TimeUnit.DAYS);
+                redisTemplate.opsForValue().set(warningThreshold,thresholdValue+"",1, TimeUnit.DAYS);
                 return ServerResponse.createBySuccess();
             }
         }
@@ -94,7 +95,7 @@ public class MainController {
 
     @RequestMapping("/uploadPhotos")
     @ResponseBody
-    public ServerResponse uploadPhotos(MultipartFile[] photos) {
+    public ServerResponse uploadPhotos(@RequestParam("photos") MultipartFile[] photos) {
         List<String> photoPathList = personService.uploadPhotos(photos);
         if(photoPathList.size()==0){
             return ServerResponse.createByErrorMessage("批量上传的照片数量为0！");

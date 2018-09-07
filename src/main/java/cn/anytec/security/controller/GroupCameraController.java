@@ -1,6 +1,7 @@
 package cn.anytec.security.controller;
 
 import cn.anytec.security.common.ServerResponse;
+import cn.anytec.security.core.annotion.OperLog;
 import cn.anytec.security.model.TbGroupCamera;
 import cn.anytec.security.model.vo.CameraVO;
 import cn.anytec.security.service.GroupCameraService;
@@ -18,17 +19,20 @@ public class GroupCameraController {
     @Autowired
     private GroupCameraService groupCameraService;
 
+    @OperLog(value = "添加设备组", key="id,name")
     @RequestMapping("/add")
     @ResponseBody
     public ServerResponse add(TbGroupCamera groupCamera){
         return groupCameraService.add(groupCamera);
     }
 
+    @OperLog(value = "删除设备组", key = "groupCameraIds")
     @RequestMapping("/delete")
     @ResponseBody
     public ServerResponse delete(@RequestParam(value = "groupCameraIds") String groupCameraIds){
         return groupCameraService.delete(groupCameraIds);
     }
+
 
     @RequestMapping("/list")
     @ResponseBody
@@ -38,9 +42,11 @@ public class GroupCameraController {
         return groupCameraService.list(pageNum,pageSize,groupName);
     }
 
+    @OperLog(value = "修改设备组信息", key="id,name")
     @RequestMapping("/update")
     @ResponseBody
     public ServerResponse update(TbGroupCamera groupCamera){
+        groupCameraService.getCameraGroupInfo(groupCamera.getId());
         return groupCameraService.update(groupCamera);
     }
 

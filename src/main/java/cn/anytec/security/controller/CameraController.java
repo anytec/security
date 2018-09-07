@@ -2,6 +2,7 @@ package cn.anytec.security.controller;
 
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.component.ipcamera.ipcService.IPCOperations;
+import cn.anytec.security.core.annotion.OperLog;
 import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.service.CameraService;
 import com.github.pagehelper.PageInfo;
@@ -20,16 +21,21 @@ public class CameraController {
     @Autowired
     private IPCOperations ipcOperations;
 
+
+    @OperLog(value = "添加设备", key="id,name")
     @PostMapping("/camera/add")
     public ServerResponse add(TbCamera camera){
         return cameraService.add(camera);
     }
+
+    @OperLog(value = "删除设备", key = "cameraIds")
     @RequestMapping("/camera/delete")
     @ResponseBody
     public ServerResponse delete(@RequestParam(value = "cameraIds") String cameraIds){
         return cameraService.delete(cameraIds);
     }
 
+//    @OperLog(value = "查询设备列表", key = "type")
     @RequestMapping("/camera/list")
     @ResponseBody
     public ServerResponse list(@RequestParam(value = "pageNum",defaultValue = "1") int pageNum, @RequestParam(value = "pageSize",defaultValue = "10") int pageSize,
@@ -45,8 +51,10 @@ public class CameraController {
         return ServerResponse.createBySuccess(pageResult);
     }
 
+    @OperLog(value = "修改设备信息", key="id,name")
     @RequestMapping("/camera/update")
     public ServerResponse update(TbCamera camera){
+        cameraService.getCameraInfo(camera.getId());
         return cameraService.update(camera);
     }
 

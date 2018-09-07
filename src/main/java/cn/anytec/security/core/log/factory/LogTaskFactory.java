@@ -62,6 +62,7 @@ public class LogTaskFactory {
                 operationLog.setSucceed(LogStatus.SUCCESS.getMessage());
                 operationLog.setMessage(msg);
                 operationLog.setOperationObj(operationObj);
+                operationLog.setCreatetime(new Date());
                 try {
                     logMapper.insertLog(operationLog);
                 }catch (Exception e){

@@ -2,6 +2,7 @@ package cn.anytec.security.service.impl;
 
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.dao.TbGroupPersonMapper;
 import cn.anytec.security.dao.TbPersonMapper;
 import cn.anytec.security.model.TbGroupPerson;
@@ -33,12 +34,18 @@ public class GroupPersonServiceImpl implements GroupPersonService {
     @Autowired
     private GeneralConfig config;
 
+    public TbGroupPerson getPersonGroupInfo(Integer personGroupId){
+        TbGroupPerson personGroup = groupPersonMapper.selectByPrimaryKey(personGroupId);
+        LogObjectHolder.me().set(personGroup);
+        return personGroup;
+    }
+
     public ServerResponse add(TbGroupPerson groupPerson) {
         int updateCount = groupPersonMapper.insertSelective(groupPerson);
         if (updateCount > 0) {
-            return ServerResponse.createBySuccess("新增groupPerson成功", groupPerson);
+            return ServerResponse.createBySuccess("添加groupPerson成功", groupPerson);
         }
-        return ServerResponse.createByErrorMessage("新增groupPerson失败");
+        return ServerResponse.createByErrorMessage("添加groupPerson失败");
     }
 
     public ServerResponse<PageInfo> list(Integer pageNum, Integer pageSize,String groupName) {
@@ -74,6 +81,15 @@ public class GroupPersonServiceImpl implements GroupPersonService {
         List<String> groupPersonIdList = Splitter.on(",").splitToList(groupPersonIds);
         for(String personGroupId : groupPersonIdList){
             if(!StringUtils.isEmpty(personGroupId)){
+                TbPersonExample personExample = new TbPersonExample();
+                TbPersonExample.Criteria personC = personExample.createCriteria();
+                personC.andGroupIdEqualTo(Integer.parseInt(personGroupId));
+                List<TbPerson> personList = personMapper.selectByExample(personExample);
+                if(personList.size()>0){
+                    TbPerson person = personList.get(0);
+                    String groupName = person.getGroupName();
+                    return ServerResponse.createByErrorMessage("底库还有底库成员,不能删除底库组: "+groupName);
+                }
                 TbGroupPersonExample example = new TbGroupPersonExample();
                 TbGroupPersonExample.Criteria c = example.createCriteria();
                 c.andIdEqualTo(Integer.parseInt(personGroupId));
@@ -86,9 +102,19 @@ public class GroupPersonServiceImpl implements GroupPersonService {
     public ServerResponse<TbGroupPerson> update(TbGroupPerson groupPerson) {
         int updateCount = groupPersonMapper.updateByPrimaryKeySelective(groupPerson);
         if (updateCount > 0) {
+            TbGroupPerson personGroup = groupPersonMapper.selectByPrimaryKey(groupPerson.getId());
+            removeRedisPersonGroup(personGroup);
             return ServerResponse.createBySuccess("更新groupPerson信息成功", groupPerson);
         }
         return ServerResponse.createByErrorMessage("更新groupPerson信息失败");
+    }
+
+    private void removeRedisPersonGroup(TbGroupPerson personGroup){
+        String redisKey = config.getPersonGroupById();
+        String personGroupId = personGroup.getId().toString();
+        if (redisTemplate.opsForHash().hasKey(redisKey, personGroupId)) {
+            redisTemplate.opsForHash().delete(redisKey,personGroupId);
+        }
     }
 
     public ServerResponse<TbGroupPerson> getGroupPersonById(String personGroupId) {

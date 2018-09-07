@@ -43,7 +43,7 @@ public class UserController {
         return userService.checkUsername(username);
     }
 
-    @OperLog("查询用户详情信息")
+    //@OperLog("查询用户详情信息")
     @PostMapping("/getUserInfo")
     public ServerResponse<UserVO> getUserInfo(@RequestParam(value = "id") Integer id){
         ServerResponse<UserVO> response = userService.getInformation(id);
@@ -58,7 +58,7 @@ public class UserController {
         return userService.update(user);
     }
 
-    @OperLog(value = "查询用户列表", key = "pageNum,pageSize,keyword")
+    //@OperLog(value = "查询用户列表", key = "pageNum,pageSize,keyword")
     @Permission(value = "查询用户列表", method = PermissionType.IS_ADMIN)
     @PostMapping("/list")
     public ServerResponse list(@RequestParam(value = "pageNum",defaultValue = "1") int pageNum,

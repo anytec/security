@@ -3,6 +3,7 @@ package cn.anytec.security.service.impl;
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.component.CameraStreamMonitor;
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.dao.TbCameraMapper;
 import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.model.TbCameraExample;
@@ -40,6 +41,12 @@ public class CameraServiceImpl implements CameraService {
     @Value("${camera.rtmpPrefix}")
     private String rtmpPrefix;
 
+    public TbCamera getCameraInfo(Integer cameraId){
+        TbCamera camera = cameraMapper.selectByPrimaryKey(cameraId);
+        LogObjectHolder.me().set(camera);
+        return camera;
+    }
+
     //添加摄像头
     public ServerResponse<String> add(TbCamera camera) {
         if (camera != null && camera.getServerLabel() != null) {
@@ -49,10 +56,10 @@ public class CameraServiceImpl implements CameraService {
             logger.debug("add camera server label:" + camera.getServerLabel());
             int updateCount = cameraMapper.insertSelective(camera);
             if (updateCount > 0) {
-                return ServerResponse.createBySuccess("新增camera成功", cameraSdkId);
+                return ServerResponse.createBySuccess("添加camera成功", cameraSdkId);
             }
         }
-        return ServerResponse.createByErrorMessage("新增camera失败");
+        return ServerResponse.createByErrorMessage("添加camera失败");
     }
 
     public ServerResponse delete(String cameraIds) {
@@ -99,18 +106,17 @@ public class CameraServiceImpl implements CameraService {
         int updateCount = cameraMapper.updateByPrimaryKeySelective(camera);
         if (updateCount > 0) {
             TbCamera cam = cameraMapper.selectByPrimaryKey(camera.getId());
-            changeRedisCameraInfo(cam);
+            removeRedisCamera(cam);
             return ServerResponse.createBySuccess("更新camera信息成功", camera);
         }
         return ServerResponse.createByErrorMessage("更新camera信息失败");
     }
 
-    private void changeRedisCameraInfo(TbCamera camera){
+    private void removeRedisCamera(TbCamera camera){
         String redisKey = config.getCameraBySdkId();
         String cameraSdkId = camera.getSdkId();
         if (redisTemplate.opsForHash().hasKey(redisKey, cameraSdkId)) {
-            redisTemplate.opsForHash().put(redisKey, cameraSdkId, JSONObject.toJSONString(camera));
-            redisTemplate.expire(redisKey, 1, TimeUnit.DAYS);
+            redisTemplate.opsForHash().delete(redisKey,cameraSdkId);
         }
     }
 

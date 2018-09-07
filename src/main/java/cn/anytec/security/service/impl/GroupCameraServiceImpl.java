@@ -4,6 +4,7 @@ import cn.anytec.security.common.ResponseCode;
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.component.mongo.MongoDBService;
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.dao.TbCameraMapper;
 import cn.anytec.security.dao.TbGroupCameraMapper;
 import cn.anytec.security.model.TbCamera;
@@ -41,12 +42,18 @@ public class GroupCameraServiceImpl implements GroupCameraService {
     @Autowired
     private GeneralConfig config;
 
+    public TbGroupCamera getCameraGroupInfo(Integer cameraGroupId){
+        TbGroupCamera cameraGroup = groupCameraMapper.selectByPrimaryKey(cameraGroupId);
+        LogObjectHolder.me().set(cameraGroup);
+        return cameraGroup;
+    }
+
     public ServerResponse add(TbGroupCamera groupCamera) {
         int updateCount = groupCameraMapper.insertSelective(groupCamera);
         if (updateCount > 0) {
-            return ServerResponse.createBySuccess("新增groupCamera成功", groupCamera);
+            return ServerResponse.createBySuccess("添加groupCamera成功", groupCamera);
         }
-        return ServerResponse.createByErrorMessage("新增groupCamera失败");
+        return ServerResponse.createByErrorMessage("添加groupCamera失败");
     }
 
     public ServerResponse list(Integer pageNum, Integer pageSize, String groupName) {
@@ -90,7 +97,6 @@ public class GroupCameraServiceImpl implements GroupCameraService {
                     String groupName = camera.getGroupName();
                     return ServerResponse.createByErrorMessage("设备组里还有设备成员,不能删除设备组: "+groupName);
                 }
-
                 TbGroupCameraExample groupExample = new TbGroupCameraExample();
                 TbGroupCameraExample.Criteria groupC = groupExample.createCriteria();
                 groupC.andIdEqualTo(Integer.parseInt(cameraGroupId));
@@ -103,9 +109,19 @@ public class GroupCameraServiceImpl implements GroupCameraService {
     public ServerResponse<TbGroupCamera> update(TbGroupCamera groupCamera) {
         int updateCount = groupCameraMapper.updateByPrimaryKeySelective(groupCamera);
         if (updateCount > 0) {
+            TbGroupCamera camGroup = groupCameraMapper.selectByPrimaryKey(groupCamera.getId());
+            removeRedisCameraGroup(camGroup);
             return ServerResponse.createBySuccess("更新groupCamera信息成功", groupCamera);
         }
         return ServerResponse.createByErrorMessage("更新groupCamera信息失败");
+    }
+
+    private void removeRedisCameraGroup(TbGroupCamera camGroup){
+        String redisKey = config.getCameraGroupById();
+        String camGroupId = camGroup.getId().toString();
+        if (redisTemplate.opsForHash().hasKey(redisKey, camGroupId)) {
+            redisTemplate.opsForHash().delete(redisKey,camGroupId);
+        }
     }
 
     @Override

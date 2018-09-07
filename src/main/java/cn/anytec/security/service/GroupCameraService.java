@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface GroupCameraService {
+    TbGroupCamera getCameraGroupInfo(Integer cameraGroupId);
     ServerResponse add(TbGroupCamera groupCamera);
     ServerResponse<String> delete(String groupCameraIds);
     ServerResponse update(TbGroupCamera groupCamera);
