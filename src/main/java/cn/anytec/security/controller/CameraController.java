@@ -54,7 +54,6 @@ public class CameraController {
     @OperLog(value = "修改设备信息", key="id,name")
     @RequestMapping("/camera/update")
     public ServerResponse update(TbCamera camera){
-        cameraService.getCameraInfo(camera.getId());
         return cameraService.update(camera);
     }
 

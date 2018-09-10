@@ -46,7 +46,6 @@ public class GroupCameraController {
     @RequestMapping("/update")
     @ResponseBody
     public ServerResponse update(TbGroupCamera groupCamera){
-        groupCameraService.getCameraGroupInfo(groupCamera.getId());
         return groupCameraService.update(groupCamera);
     }
 

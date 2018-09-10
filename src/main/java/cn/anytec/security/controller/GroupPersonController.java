@@ -41,7 +41,6 @@ public class GroupPersonController {
     @RequestMapping("/update")
     @ResponseBody
     public ServerResponse update(TbGroupPerson groupPerson){
-        groupPersonService.getPersonGroupInfo(groupPerson.getId());
         return groupPersonService.update(groupPerson);
     }
 }

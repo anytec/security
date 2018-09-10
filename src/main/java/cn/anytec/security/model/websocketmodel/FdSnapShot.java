@@ -8,6 +8,7 @@ public class FdSnapShot {
     private String cameraName;
     private String gender;
     private String faceSdkId;
+    private String wholePhoto;
     private List<String> emotions;
 
     public String getCatchTime() {
@@ -56,5 +57,13 @@ public class FdSnapShot {
 
     public void setEmotions(List<String> emotions) {
         this.emotions = emotions;
+    }
+
+    public String getWholePhoto() {
+        return wholePhoto;
+    }
+
+    public void setWholePhoto(String wholePhoto) {
+        this.wholePhoto = wholePhoto;
     }
 }

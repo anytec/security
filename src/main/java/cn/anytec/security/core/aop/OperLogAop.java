@@ -91,7 +91,8 @@ public class OperLogAop {
         }
 
         // 如果涉及到修改，对比修改的变化   indexOf性能优于contains
-        boolean edit = (operName.indexOf("修改") != -1) || (operName.indexOf("编辑") != -1);
+       // boolean edit = (operName.indexOf("修改") != -1) || (operName.indexOf("编辑") != -1);
+        boolean edit = (operName.indexOf("编辑") != -1);
         if (edit) {
             Object obj1 = LogObjectHolder.me().get();
             msg = Contrast.contrastObj(obj1, reqParam);
