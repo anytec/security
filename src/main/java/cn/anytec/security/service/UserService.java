@@ -9,11 +9,11 @@ import javax.servlet.http.HttpSession;
 
 public interface UserService {
 
-    ServerResponse<UserVO> login(String uname, String upass, HttpSession session);
+    ServerResponse<UserVO> login(String accent, String upass, HttpSession session);
 
     ServerResponse register(TbUser user);
 
-    ServerResponse<String> checkUsername(String username);
+    ServerResponse<String> checkAccent(String accent);
 
     ServerResponse<PageInfo> list(int pageNum, int pageSize, String keyword);
 
