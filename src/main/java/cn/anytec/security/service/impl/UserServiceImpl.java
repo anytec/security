@@ -4,7 +4,9 @@ import cn.anytec.security.common.ResponseCode;
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.config.GeneralConfig;
 import cn.anytec.security.core.enums.SecurityExceptionEnum;
+import cn.anytec.security.core.enums.UserStatus;
 import cn.anytec.security.core.exception.BussinessException;
+import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.core.util.Contrast;
 import cn.anytec.security.dao.TbUserMapper;
 import cn.anytec.security.model.TbUser;
@@ -34,17 +36,18 @@ public class UserServiceImpl implements UserService {
     private GeneralConfig config;
 
     @Override
-    public ServerResponse<UserVO> login(String uname, String upass, HttpSession session) {
+    public ServerResponse<UserVO> login(String accent, String upass, HttpSession session) {
 
         // 构造查询
         TbUserExample userExample = new TbUserExample();
         TbUserExample.Criteria criteria = userExample.createCriteria();
-        criteria.andUnameEqualTo(uname);
+        criteria.andAccentEqualTo(accent);
+        criteria.andStatusEqualTo(UserStatus.ENABLE);
         List<TbUser> users = userMapper.selectByExample(userExample);
 
         // 登录逻辑判断
         if (users.size() == 0) {
-            return ServerResponse.createByErrorMessage("用户名不存在");
+            return ServerResponse.createByErrorMessage("账号不存在");
         }
         String md5Pwd = MD5Util.MD5EncodeUtf8(upass + config.getPasswordSalt());
         criteria.andUpassEqualTo(md5Pwd);
@@ -63,14 +66,15 @@ public class UserServiceImpl implements UserService {
         return ServerResponse.createBySuccess("登录成功", userVO);
     }
 
-    public ServerResponse<String> register(TbUser user) {
-        ServerResponse validResponse = this.checkUsername(user.getUname());
+    public ServerResponse register(TbUser user) {
+        ServerResponse validResponse = this.checkAccent(user.getAccent());
         if (!validResponse.isSuccess()) {
             return validResponse;
         }
+        user.setStatus(UserStatus.ENABLE);
         user.setRole(config.getUserRole());
         //MD5加密
-        user.setUpass(MD5Util.MD5EncodeUtf8(user.getUpass()+config.getPasswordSalt()));
+        user.setUpass(MD5Util.MD5EncodeUtf8(user.getUpass() + config.getPasswordSalt()));
         int resultCount = userMapper.insert(user);
         if (resultCount == 0) {
             return ServerResponse.createByErrorMessage("注册失败");
@@ -81,9 +85,10 @@ public class UserServiceImpl implements UserService {
     public ServerResponse<PageInfo> list(int pageNum, int pageSize, String keyword) {
         PageHelper.startPage(pageNum, pageSize);
         TbUserExample example = new TbUserExample();
+        TbUserExample.Criteria criteria = example.createCriteria();
+        criteria.andStatusEqualTo(UserStatus.ENABLE);
         // 用于关键字查询
         if (StringUtils.isNoneBlank(keyword)) {
-            TbUserExample.Criteria criteria = example.createCriteria();
             criteria.andUnameLike("%" + keyword + "%");
         }
         List<TbUser> userList = userMapper.selectByExample(example);
@@ -98,18 +103,18 @@ public class UserServiceImpl implements UserService {
                 userVOList.add(userVO);
             });
         }
-
         return ServerResponse.createBySuccess(PageInfo.of(userVOList));
     }
 
-    public ServerResponse<String> checkUsername(String username) {
+    public ServerResponse<String> checkAccent(String accent) {
         //开始校验
         TbUserExample example = new TbUserExample();
         TbUserExample.Criteria c = example.createCriteria();
-        c.andUnameEqualTo(username);
+        c.andStatusEqualTo(UserStatus.ENABLE);
+        c.andAccentEqualTo(accent);
         List<TbUser> userList = userMapper.selectByExample(example);
         if (userList.size() > 0) {
-            return ServerResponse.createByErrorMessage("用户名已存在");
+            return ServerResponse.createByErrorMessage("账号已存在");
         }
         return ServerResponse.createBySuccessMessage("校验成功");
     }
@@ -124,19 +129,25 @@ public class UserServiceImpl implements UserService {
         for(String userId : userIdList){
             TbUserExample example = new TbUserExample();
             TbUserExample.Criteria c = example.createCriteria();
+            c.andStatusEqualTo(UserStatus.ENABLE);
             c.andIdEqualTo(Integer.valueOf(userId));
+            TbUser updateUser = new TbUser();
+            updateUser.setStatus(UserStatus.DELETED);
             if (userId.equals(String.valueOf(currentUser.getId()))) {
                 throw new BussinessException(SecurityExceptionEnum.SERVER_ERROR.getCode(), "不能删除当前管理员");
             }
-            userMapper.deleteByExample(example);
+            int update = userMapper.updateByExampleSelective(updateUser, example);
+            if (update == 0) {
+                return ServerResponse.createByErrorMessage("不存在该用户");
+            }
         }
-        return ServerResponse.createBySuccess();
+        return ServerResponse.createBySuccessMessage("用户删除成功");
     }
 
     public ServerResponse update(TbUser user) {
         TbUser updateUser = new TbUser();
-        updateUser.setId(user.getId());
-        updateUser.setNotes(user.getNotes());
+        BeanUtils.copyProperties(user, updateUser, "upass", "accent", "role");
+        updateUser.setStatus(UserStatus.ENABLE);
         updateUser.setUpass(user.getUpass() == null ? null : MD5Util.MD5EncodeUtf8(user.getUpass() + config.getPasswordSalt()));
         int updateCount = userMapper.updateByPrimaryKeySelective(updateUser);
         if (updateCount > 0) {
@@ -154,6 +165,7 @@ public class UserServiceImpl implements UserService {
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO, "role");
         userVO.setRole(Contrast.parseRole(user.getRole()));
+        LogObjectHolder.me().set(user);
         return ServerResponse.createBySuccess(userVO);
     }
 

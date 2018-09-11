@@ -100,7 +100,9 @@ public class Contrast {
             for (String ky : keys) {
                 // 主键在此次请求中的请求内容
                 String value = req.get(ky);
-                sb.append(",").append(ky).append(" = ").append(value);
+                if (!StringUtils.isBlank(value)) {
+                    sb.append(",").append(ky).append(" = ").append(value);
+                }
             }
             return sb.toString().substring(1);
         }else {

@@ -21,8 +21,8 @@ public class UserController {
     private UserService userService;
 
     @PostMapping("/login")
-    public ServerResponse<UserVO> login(String uname, String upass, HttpSession session){
-        return userService.login(uname,upass, session);
+    public ServerResponse<UserVO> login(String accent, String upass, HttpSession session){
+        return userService.login(accent,upass, session);
     }
 
     @PostMapping("/logout")
@@ -34,24 +34,23 @@ public class UserController {
     @OperLog(value = "注册用户", key = "uname,notes")
     @Permission(value = "注册用户", method = PermissionType.IS_ADMIN)
     @PostMapping("/register")
-    public ServerResponse<String> register(TbUser user){
+    public ServerResponse register(TbUser user){
         return userService.register(user);
     }
 
     @PostMapping("/checkUsername")
     public ServerResponse<String> checkUsername(String username){
-        return userService.checkUsername(username);
+        return userService.checkAccent(username);
     }
 
     //@OperLog("查询用户详情信息")
     @PostMapping("/getUserInfo")
     public ServerResponse<UserVO> getUserInfo(@RequestParam(value = "id") Integer id){
         ServerResponse<UserVO> response = userService.getInformation(id);
-        LogObjectHolder.me().set(response.getData());
         return response;
     }
 
-    @OperLog("修改用户信息")
+    @OperLog(value = "修改用户信息", key = "avatar,uname,contact,notes")
     @Permission(value = "修改用户信息", method = PermissionType.IS_ADMIN)
     @PostMapping("/update")
     public ServerResponse update(TbUser user){

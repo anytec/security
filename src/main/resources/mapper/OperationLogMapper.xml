@@ -57,6 +57,7 @@
         tb_user u
         WHERE
         l.userid = u.id
+        ANd u.status = 1
         AND l.logtype = '业务日志'
         <if test="firstTime != null and firstTime != ''">
             AND l.createtime <![CDATA[ >= ]]> #{firstTime}
