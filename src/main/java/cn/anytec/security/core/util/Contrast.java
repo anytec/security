@@ -104,6 +104,9 @@ public class Contrast {
                     sb.append(",").append(ky).append(" = ").append(value);
                 }
             }
+            if(StringUtils.isEmpty(sb.toString())){
+                return sb.toString();
+            }
             return sb.toString().substring(1);
         }else {
             // 主键在此次请求中的请求内容

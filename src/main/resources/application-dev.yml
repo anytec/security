@@ -1,5 +1,5 @@
 server:
-  ip: 192.168.10.158
+  ip: 192.168.10.179
   port: 9999
 sanpCamera:
   port: 9998
@@ -23,7 +23,7 @@ file:
   map:
     path: /home/n-tech-zhao/map/
   personPhotos:
-    path: /home/n-tech-zhao/img/
+    path: D:\personPhotos\
 
 mybatis:
   mapperLocations: classpath:mapper/*.xml
@@ -62,7 +62,7 @@ staticSdk:
   url: http://192.168.10.212:8000
   version: v1
   warningThreshold: 0.7
-  staticGallery: 62Static
+  staticGallery: 179Static
 
 redisKeys:
   cameraBySdkId: getCameraBySdkId
@@ -72,6 +72,7 @@ redisKeys:
   personCounting: personCounting
   warningThreshold: warningThrehsold
   captureCameras: captureCameras
+  captureCamerasInUse: captureCamerasInUse
 # mongodb
 mongo:
   host: 127.0.0.1

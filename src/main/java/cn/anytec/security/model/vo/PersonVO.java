@@ -2,12 +2,19 @@ package cn.anytec.security.model.vo;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.validation.constraints.NotEmpty;
+
 public class PersonVO {
     private Integer id;
     private String sdkId;
     private String name;
+
+    @NotEmpty(message = "标志编号必填")
     private String idNumber;
+
+    @NotEmpty(message = "性别必填")
     private String gender;
+
     private MultipartFile photo;
     private String photoUrl;
     private Integer groupId;

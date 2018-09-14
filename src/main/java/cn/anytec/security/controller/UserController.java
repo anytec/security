@@ -20,9 +20,10 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @OperLog(value = "注册用户", key = "account")
     @PostMapping("/login")
-    public ServerResponse<UserVO> login(String accent, String upass, HttpSession session){
-        return userService.login(accent,upass, session);
+    public ServerResponse<UserVO> login(String account, String upass, HttpSession session){
+        return userService.login(account,upass, session);
     }
 
     @PostMapping("/logout")
@@ -40,7 +41,7 @@ public class UserController {
 
     @PostMapping("/checkUsername")
     public ServerResponse<String> checkUsername(String username){
-        return userService.checkAccent(username);
+        return userService.checkaccount(username);
     }
 
     //@OperLog("查询用户详情信息")
@@ -54,7 +55,12 @@ public class UserController {
     @Permission(value = "修改用户信息", method = PermissionType.IS_ADMIN)
     @PostMapping("/update")
     public ServerResponse update(TbUser user){
-        return userService.update(user);
+//        return userService.update(userVO);
+        if (user != null && user.getId() > 0) {
+            return userService.update(user);
+        }else {
+            return ServerResponse.createByErrorMessage("用户ID不能为空");
+        }
     }
 
     //@OperLog(value = "查询用户列表", key = "pageNum,pageSize,keyword")

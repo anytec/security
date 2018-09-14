@@ -326,4 +326,13 @@
       remarks = #{remarks,jdbcType=VARCHAR}
     where id = #{id,jdbcType=INTEGER}
   </update>
+
+  <select id="selectInCameraSdkIds" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from tb_camera where sdk_id in
+    <foreach collection="list" index="index" item="cameraSdkIds" open="(" separator="," close=")">
+      #{cameraSdkIds}
+    </foreach>
+  </select>
 </mapper>

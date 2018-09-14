@@ -12,6 +12,7 @@ import cn.anytec.security.model.TbPersonExample;
 import cn.anytec.security.model.parammodel.FindFaceParam;
 import cn.anytec.security.service.PersonService;
 import cn.anytec.security.model.vo.PersonVO;
+import cn.anytec.security.util.KeyUtil;
 import cn.anytec.security.util.MD5Util;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.PageHelper;
@@ -61,12 +62,25 @@ public class PersonServiceImpl implements PersonService {
         return person;
     }
 
+    @Override
+    public boolean checkIdNumber(String idNumber) {
+        TbPersonExample example = new TbPersonExample();
+        TbPersonExample.Criteria c = example.createCriteria();
+        c.andIdNumberEqualTo(idNumber);
+        List<TbPerson> personList = personMapper.selectByExample(example);
+        if(CollectionUtils.isEmpty(personList)){
+            return true;
+        }
+        return false;
+    }
+
     public ServerResponse<TbPerson> add(PersonVO personVO) {
         MultipartFile photo = personVO.getPhoto();
         String photoUrl = personVO.getPhotoUrl();
         try {
             FindFaceParam param = getStaticFindFaceParam();
             param.setPhotoUrl(photoUrl);
+            param.setMeta(personVO.getName());
             FacePojo facePojo = addStaticSdkFace(photo,param);
             if(facePojo != null){
                 TbPerson person = parsePersonVo(personVO, facePojo);
@@ -148,7 +162,9 @@ public class PersonServiceImpl implements PersonService {
             String sdkId = personVO.getSdkId();
             if (deleteSdkFace(sdkId)) {
                 try{
-                    facePojo = addStaticSdkFace(photo,null);
+                    FindFaceParam param = getStaticFindFaceParam();
+                    param.setMeta(personVO.getName());
+                    facePojo = addStaticSdkFace(photo,param);
                 }catch (Exception e){
                     e.printStackTrace();
                 }
@@ -245,18 +261,20 @@ public class PersonServiceImpl implements PersonService {
             if(fileName.indexOf("/")>0){
                 fileName = fileName.substring(fileName.indexOf("/")+1);
             }
-            String personName = fileName.split("\\.")[0];
-            String newFileName = newFileName(fileName);
-            String filePath = personPhotosPath + "/" + newFileName;
-            File photo = new File(filePath);
-            try {
-                file.transferTo(photo);
-            } catch (IllegalStateException | IOException e) {
-                e.printStackTrace();
-                return null;
+            if(fileName.contains(".")){
+                String personName = fileName.substring(0,fileName.lastIndexOf("."));
+                String newFileName = newFileName(fileName);
+                String filePath = personPhotosPath + "/" + newFileName;
+                File photo = new File(filePath);
+                try {
+                    file.transferTo(photo);
+                } catch (IllegalStateException | IOException e) {
+                    e.printStackTrace();
+                    return null;
+                }
+                String photoPath = "http://"+ip+":"+port+"/static/" + newFileName + "#pn#" + personName;
+                pathList.add(photoPath);
             }
-            String photoPath = "http://"+ip+":"+port+"/static/" + newFileName + "#pn#" + personName;
-            pathList.add(photoPath);
         }
         return pathList;
     }
@@ -294,6 +312,7 @@ public class PersonServiceImpl implements PersonService {
                     personVO.setGroupName(personGroupName);
                     personVO.setName(personName);
                     personVO.setRemarks("批量录入");
+                    personVO.setIdNumber(KeyUtil.generate());
                     TbPerson person = parsePersonVo(personVO, facePojo);
                     if (!addMySqlFace(person)) {
                         return ServerResponse.createBySuccess("批量上传照片发生错误", person);

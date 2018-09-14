@@ -36,12 +36,12 @@ public class UserServiceImpl implements UserService {
     private GeneralConfig config;
 
     @Override
-    public ServerResponse<UserVO> login(String accent, String upass, HttpSession session) {
+    public ServerResponse<UserVO> login(String account, String upass, HttpSession session) {
 
         // 构造查询
         TbUserExample userExample = new TbUserExample();
         TbUserExample.Criteria criteria = userExample.createCriteria();
-        criteria.andAccentEqualTo(accent);
+        criteria.andaccountEqualTo(account);
         criteria.andStatusEqualTo(UserStatus.ENABLE);
         List<TbUser> users = userMapper.selectByExample(userExample);
 
@@ -67,7 +67,7 @@ public class UserServiceImpl implements UserService {
     }
 
     public ServerResponse register(TbUser user) {
-        ServerResponse validResponse = this.checkAccent(user.getAccent());
+        ServerResponse validResponse = this.checkaccount(user.getAccount());
         if (!validResponse.isSuccess()) {
             return validResponse;
         }
@@ -106,12 +106,12 @@ public class UserServiceImpl implements UserService {
         return ServerResponse.createBySuccess(PageInfo.of(userVOList));
     }
 
-    public ServerResponse<String> checkAccent(String accent) {
+    public ServerResponse<String> checkaccount(String account) {
         //开始校验
         TbUserExample example = new TbUserExample();
         TbUserExample.Criteria c = example.createCriteria();
         c.andStatusEqualTo(UserStatus.ENABLE);
-        c.andAccentEqualTo(accent);
+        c.andaccountEqualTo(account);
         List<TbUser> userList = userMapper.selectByExample(example);
         if (userList.size() > 0) {
             return ServerResponse.createByErrorMessage("账号已存在");
@@ -145,11 +145,20 @@ public class UserServiceImpl implements UserService {
     }
 
     public ServerResponse update(TbUser user) {
+        TbUser selectByPrimaryKey = userMapper.selectByPrimaryKey(user.getId());
+        if (selectByPrimaryKey == null || selectByPrimaryKey.getStatus().equals(UserStatus.DELETED)) {
+            return ServerResponse.createByErrorMessage("用户不存在");
+        }
+
         TbUser updateUser = new TbUser();
-        BeanUtils.copyProperties(user, updateUser, "upass", "accent", "role");
-        updateUser.setStatus(UserStatus.ENABLE);
+        BeanUtils.copyProperties(user, updateUser, "id","upass", "account", "role");
         updateUser.setUpass(user.getUpass() == null ? null : MD5Util.MD5EncodeUtf8(user.getUpass() + config.getPasswordSalt()));
-        int updateCount = userMapper.updateByPrimaryKeySelective(updateUser);
+
+        TbUserExample example = new TbUserExample();
+        TbUserExample.Criteria criteria = example.createCriteria();
+        criteria.andStatusEqualTo(UserStatus.ENABLE);
+        criteria.andIdEqualTo(user.getId());
+        int updateCount = userMapper.updateByExampleSelective(updateUser, example);
         if (updateCount > 0) {
             return ServerResponse.createBySuccessMessage("更新个人信息成功");
         }
@@ -163,7 +172,7 @@ public class UserServiceImpl implements UserService {
         }
 
         UserVO userVO = new UserVO();
-        BeanUtils.copyProperties(user, userVO, "role");
+        BeanUtils.copyProperties(user, userVO, "role","upass");
         userVO.setRole(Contrast.parseRole(user.getRole()));
         LogObjectHolder.me().set(user);
         return ServerResponse.createBySuccess(userVO);

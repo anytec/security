@@ -1,5 +1,6 @@
 package cn.anytec.security.config;
 
+import cn.anytec.security.interceptor.LoginInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.*;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -33,6 +34,8 @@ public class MVCConfiguration implements WebMvcConfigurer {
 
    /* @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new LoginInterceptor()).addPathPatterns("/static/html/**","/video_index","/manage_index").excludePathPatterns("/login");
+        registry.addInterceptor(new LoginInterceptor())
+                .addPathPatterns("/**")
+                .excludePathPatterns("/user/login","/receiveSnap","/v0/camera","/");
     }*/
 }

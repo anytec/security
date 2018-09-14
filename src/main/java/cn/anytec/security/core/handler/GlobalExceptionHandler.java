@@ -58,6 +58,7 @@ public class GlobalExceptionHandler {
         if (e instanceof BussinessException) {
             BussinessException bussinessException = (BussinessException) e;
             msg = bussinessException.getMsg();
+            code = bussinessException.getCode();
         }
 
         // 权限不足 403

@@ -1,11 +1,13 @@
 package cn.anytec.security.model;
 
-public class TbUser {
+import java.io.Serializable;
+
+public class TbUser implements Serializable {
     private Integer id;
 
     private String avatar;
 
-    private String accent;
+    private String account;
 
     private String uname;
 
@@ -35,12 +37,12 @@ public class TbUser {
         this.avatar = avatar == null ? null : avatar.trim();
     }
 
-    public String getAccent() {
-        return accent;
+    public String getAccount() {
+        return account;
     }
 
-    public void setAccent(String accent) {
-        this.accent = accent == null ? null : accent.trim();
+    public void setAccount(String account) {
+        this.account = account == null ? null : account.trim();
     }
 
     public String getUname() {

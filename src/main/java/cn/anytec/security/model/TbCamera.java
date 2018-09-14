@@ -23,7 +23,7 @@ public class TbCamera {
 
     private String groupName;
 
-    private String remarks;
+    private String remarks = "";
 
     public Integer getId() {
         return id;

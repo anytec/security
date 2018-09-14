@@ -234,73 +234,73 @@ public class TbUserExample {
             return (Criteria) this;
         }
 
-        public Criteria andAccentIsNull() {
-            addCriterion("accent is null");
+        public Criteria andaccountIsNull() {
+            addCriterion("account is null");
             return (Criteria) this;
         }
 
-        public Criteria andAccentIsNotNull() {
-            addCriterion("accent is not null");
+        public Criteria andaccountIsNotNull() {
+            addCriterion("account is not null");
             return (Criteria) this;
         }
 
-        public Criteria andAccentEqualTo(String value) {
-            addCriterion("accent =", value, "accent");
+        public Criteria andaccountEqualTo(String value) {
+            addCriterion("account =", value, "account");
             return (Criteria) this;
         }
 
-        public Criteria andAccentNotEqualTo(String value) {
-            addCriterion("accent <>", value, "accent");
+        public Criteria andaccountNotEqualTo(String value) {
+            addCriterion("account <>", value, "account");
             return (Criteria) this;
         }
 
-        public Criteria andAccentGreaterThan(String value) {
-            addCriterion("accent >", value, "accent");
+        public Criteria andaccountGreaterThan(String value) {
+            addCriterion("account >", value, "account");
             return (Criteria) this;
         }
 
-        public Criteria andAccentGreaterThanOrEqualTo(String value) {
-            addCriterion("accent >=", value, "accent");
+        public Criteria andaccountGreaterThanOrEqualTo(String value) {
+            addCriterion("account >=", value, "account");
             return (Criteria) this;
         }
 
-        public Criteria andAccentLessThan(String value) {
-            addCriterion("accent <", value, "accent");
+        public Criteria andaccountLessThan(String value) {
+            addCriterion("account <", value, "account");
             return (Criteria) this;
         }
 
-        public Criteria andAccentLessThanOrEqualTo(String value) {
-            addCriterion("accent <=", value, "accent");
+        public Criteria andaccountLessThanOrEqualTo(String value) {
+            addCriterion("account <=", value, "account");
             return (Criteria) this;
         }
 
-        public Criteria andAccentLike(String value) {
-            addCriterion("accent like", value, "accent");
+        public Criteria andaccountLike(String value) {
+            addCriterion("account like", value, "account");
             return (Criteria) this;
         }
 
-        public Criteria andAccentNotLike(String value) {
-            addCriterion("accent not like", value, "accent");
+        public Criteria andaccountNotLike(String value) {
+            addCriterion("account not like", value, "account");
             return (Criteria) this;
         }
 
-        public Criteria andAccentIn(List<String> values) {
-            addCriterion("accent in", values, "accent");
+        public Criteria andaccountIn(List<String> values) {
+            addCriterion("account in", values, "account");
             return (Criteria) this;
         }
 
-        public Criteria andAccentNotIn(List<String> values) {
-            addCriterion("accent not in", values, "accent");
+        public Criteria andaccountNotIn(List<String> values) {
+            addCriterion("account not in", values, "account");
             return (Criteria) this;
         }
 
-        public Criteria andAccentBetween(String value1, String value2) {
-            addCriterion("accent between", value1, value2, "accent");
+        public Criteria andaccountBetween(String value1, String value2) {
+            addCriterion("account between", value1, value2, "account");
             return (Criteria) this;
         }
 
-        public Criteria andAccentNotBetween(String value1, String value2) {
-            addCriterion("accent not between", value1, value2, "accent");
+        public Criteria andaccountNotBetween(String value1, String value2) {
+            addCriterion("account not between", value1, value2, "account");
             return (Criteria) this;
         }
 

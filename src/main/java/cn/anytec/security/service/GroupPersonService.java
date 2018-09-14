@@ -11,5 +11,6 @@ public interface GroupPersonService {
     ServerResponse update(TbGroupPerson groupPerson);
     ServerResponse<PageInfo> list(Integer pageNum, Integer pageSize,String groupName);
     ServerResponse<TbGroupPerson> getGroupPersonById(String personGroupId);
+    boolean isPersonGroupNameExist(String personGroupName);
 
 }

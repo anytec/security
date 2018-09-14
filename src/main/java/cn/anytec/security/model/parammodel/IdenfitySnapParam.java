@@ -10,8 +10,10 @@ public class IdenfitySnapParam {
     private String confidence;
     private String photoUrl;
     private MultipartFile photo;
+    private Integer identifyNumber;
 
-    public IdenfitySnapParam(String cameraGroupIds, String cameraIds, String startTime, String endTime, String confidence, String photoUrl, MultipartFile photo) {
+    public IdenfitySnapParam(String cameraGroupIds, String cameraIds, String startTime, String endTime,
+                             String confidence, String photoUrl, MultipartFile photo, Integer identifyNumber) {
         this.cameraGroupIds = cameraGroupIds;
         this.cameraIds = cameraIds;
         this.startTime = startTime;
@@ -19,6 +21,7 @@ public class IdenfitySnapParam {
         this.confidence = confidence;
         this.photoUrl = photoUrl;
         this.photo = photo;
+        this.identifyNumber = identifyNumber;
     }
 
     public String getCameraGroupIds() {
@@ -75,5 +78,13 @@ public class IdenfitySnapParam {
 
     public void setPhoto(MultipartFile photo) {
         this.photo = photo;
+    }
+
+    public Integer getIdentifyNumber() {
+        return identifyNumber;
+    }
+
+    public void setIdentifyNumber(Integer identifyNumber) {
+        this.identifyNumber = identifyNumber;
     }
 }

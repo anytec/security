@@ -33,7 +33,10 @@ public enum SecurityExceptionEnum {
     /**
      * 其他
      */
-    WRITE_ERROR(500,"渲染界面错误");
+    WRITE_ERROR(500,"渲染界面错误"),
+
+    CAMERA_NOT_FOUND(1,"设备未找到"),
+    ;
 
 
     /** 响应码 */

@@ -7,7 +7,7 @@ import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.model.parammodel.IdenfitySnapParam;
 import cn.anytec.security.service.CameraService;
 import cn.anytec.security.service.PersonService;
-import com.sun.tools.javac.util.Convert;
+//import com.sun.tools.javac.util.Convert;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

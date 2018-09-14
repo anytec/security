@@ -136,4 +136,16 @@ public class GroupPersonServiceImpl implements GroupPersonService {
         }
         return ServerResponse.createByErrorMessage("getGroupPersonById未查到符合条件的信息");
     }
+
+    @Override
+    public boolean isPersonGroupNameExist(String personGroupName) {
+        TbGroupPersonExample example = new TbGroupPersonExample();
+        TbGroupPersonExample.Criteria c = example.createCriteria();
+        c.andNameEqualTo(personGroupName);
+        List<TbGroupPerson> personGroupList = groupPersonMapper.selectByExample(example);
+        if(!CollectionUtils.isEmpty(personGroupList)){
+            return true;
+        }
+        return false;
+    }
 }

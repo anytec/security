@@ -26,6 +26,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 
 @Component
@@ -179,13 +180,14 @@ public class FindFaceImpl implements FindFaceService {
         HttpResponse response;
         org.apache.http.HttpEntity entity;
         MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
+        ContentType contentType= ContentType.create("text/plain", Charset.forName("UTF-8"));
         if(photo != null){
             multipartEntityBuilder.addBinaryBody("photo",photo, ContentType.DEFAULT_BINARY, "photo");
         }else if(!StringUtils.isEmpty(param.getPhotoUrl())){
             multipartEntityBuilder.addTextBody("photo",param.getPhotoUrl());
         }
         if(!StringUtils.isEmpty(param.getMeta())) {
-            multipartEntityBuilder.addTextBody("meta",param.getMeta());
+            multipartEntityBuilder.addTextBody("meta",param.getMeta(),contentType);
         }
         if(!StringUtils.isEmpty(param.getBbox())){
             multipartEntityBuilder.addTextBody("bbox",param.getBbox());

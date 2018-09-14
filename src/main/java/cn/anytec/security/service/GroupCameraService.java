@@ -16,5 +16,6 @@ public interface GroupCameraService {
     ServerResponse<Map<String,List<CameraVO>>> getAllCameras(String status);
     TbGroupCamera getGroupCameraById(String cameraGroupId);
     List<Integer> getAllCameraGroupId();
+    boolean isCameraGroupNameExist(String cameraGroupName);
 
 }

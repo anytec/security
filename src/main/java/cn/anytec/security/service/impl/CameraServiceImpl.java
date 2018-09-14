@@ -2,7 +2,9 @@ package cn.anytec.security.service.impl;
 
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.component.CameraStreamMonitor;
+import cn.anytec.security.component.ipcamera.ipcService.IPCOperations;
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.core.enums.CameraType;
 import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.dao.TbCameraMapper;
 import cn.anytec.security.model.TbCamera;
@@ -32,6 +34,8 @@ public class CameraServiceImpl implements CameraService {
     @Autowired
     private TbCameraMapper cameraMapper;
     @Autowired
+    private IPCOperations ipcOperations;
+    @Autowired
     private RedisTemplate redisTemplate;
     @Autowired
     private CameraStreamMonitor cameraStreamMonitor;
@@ -40,8 +44,12 @@ public class CameraServiceImpl implements CameraService {
 
     @Value("${camera.rtmpPrefix}")
     private String rtmpPrefix;
+    @Value("${redisKeys.captureCameras}")
+    private String captureCameras;
+    @Value("${redisKeys.captureCamerasInUse}")
+    private String captureCamerasInUse;
 
-    public TbCamera getCameraInfo(Integer cameraId){
+    public TbCamera getCameraById(Integer cameraId){
         TbCamera camera = cameraMapper.selectByPrimaryKey(cameraId);
         LogObjectHolder.me().set(camera);
         return camera;
@@ -54,6 +62,7 @@ public class CameraServiceImpl implements CameraService {
             camera.setSdkId(cameraSdkId);
             camera.setPlayAddress(rtmpPrefix + cameraSdkId);
             logger.debug("add camera server label:" + camera.getServerLabel());
+            ipcOperations.handleAddCaptureCamera(camera);
             int updateCount = cameraMapper.insertSelective(camera);
             if (updateCount > 0) {
                 return ServerResponse.createBySuccess("添加camera成功", cameraSdkId);
@@ -62,14 +71,28 @@ public class CameraServiceImpl implements CameraService {
         return ServerResponse.createByErrorMessage("添加camera失败");
     }
 
-    public ServerResponse delete(String cameraIds) {
-        List<String> cameraIdList = Splitter.on(",").splitToList(cameraIds);
-        for (String cameraId : cameraIdList) {
-            if (!StringUtils.isEmpty(cameraId)) {
-                TbCameraExample example = new TbCameraExample();
-                TbCameraExample.Criteria c = example.createCriteria();
-                c.andIdEqualTo(Integer.parseInt(cameraId));
-                cameraMapper.deleteByExample(example);
+    public ServerResponse delete(String cameraSdkIds) {
+        String cameraBySdkId = config.getCameraBySdkId();
+        List<String> cameraSdkIdList = Splitter.on(",").splitToList(cameraSdkIds);
+        List<TbCamera> cameraList = cameraMapper.selectInCameraSdkIds(cameraSdkIdList);
+        for (String cameraSdkId : cameraSdkIdList) {
+            for(TbCamera camera : cameraList){
+                if(camera.getSdkId().equals(cameraSdkId)){
+                    //删除redis里的camera
+                    if (redisTemplate.opsForHash().hasKey(cameraBySdkId, cameraSdkId)) {
+                        redisTemplate.opsForHash().delete(cameraBySdkId,cameraSdkId);
+                    }
+                    if(camera.getCameraType().equals(CameraType.CaptureCamera.getMsg())){
+                        //删除redis里的抓拍机
+                        ipcOperations.invalidCaptureCamera(cameraSdkId);
+                        ipcOperations.deleteFromInUseCache(cameraSdkId);
+                    }
+                    //删除mysql里的camera
+                    TbCameraExample example = new TbCameraExample();
+                    TbCameraExample.Criteria c = example.createCriteria();
+                    c.andSdkIdEqualTo(cameraSdkId);
+                    cameraMapper.deleteByExample(example);
+                }
             }
         }
         return ServerResponse.createBySuccess();
@@ -103,6 +126,16 @@ public class CameraServiceImpl implements CameraService {
     }
 
     public ServerResponse<TbCamera> update(TbCamera camera) {
+        if(camera.getCameraStatus() != null){
+            TbCamera cam = getById(camera.getId());
+            if(cam.getCameraType().equals(CameraType.CaptureCamera.getMsg())){
+                if(camera.getCameraStatus() == 0){
+                    ipcOperations.standbyCaptureCamera(cam.getServerLabel());
+                }else if(camera.getCameraStatus() == 1){
+                    ipcOperations.activeCaptureCamera(cam.getServerLabel());
+                }
+            }
+        }
         int updateCount = cameraMapper.updateByPrimaryKeySelective(camera);
         if (updateCount > 0) {
             TbCamera cam = cameraMapper.selectByPrimaryKey(camera.getId());
@@ -142,8 +175,7 @@ public class CameraServiceImpl implements CameraService {
 
     public String cameras() {
         TbCameraExample example = new TbCameraExample();
-        example.createCriteria().andCameraStatusEqualTo(1).andCameraTypeEqualTo("视频流");
-
+        example.createCriteria().andCameraStatusEqualTo(1).andCameraTypeEqualTo(CameraType.VideoStreamCamera.getMsg());
         List<TbCamera> cameraList = cameraMapper.selectByExample(example);
         List list = new ArrayList();
         //将库中激活的摄像头筛选后放到集合中
@@ -215,5 +247,17 @@ public class CameraServiceImpl implements CameraService {
         TbCameraExample example = new TbCameraExample();
         TbCameraExample.Criteria c = example.createCriteria();
         return cameraMapper.selectByPrimaryKey(cameraId);
+    }
+
+    @Override
+    public boolean isCameraNameExist(String cameraName) {
+        TbCameraExample example = new TbCameraExample();
+        TbCameraExample.Criteria c = example.createCriteria();
+        c.andNameEqualTo(cameraName);
+        List<TbCamera> cameraList = cameraMapper.selectByExample(example);
+        if(!CollectionUtils.isEmpty(cameraList)){
+            return true;
+        }
+        return false;
     }
 }
