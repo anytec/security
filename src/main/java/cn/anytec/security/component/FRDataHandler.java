@@ -287,14 +287,18 @@ public class FRDataHandler {
             if(confidenceValue > 1){
                 confidenceValue = confidenceValue/100;
             }
-            findFaceParam.setThreshold(confidenceValue+"");
+            findFaceParam.setThreshold(String.valueOf(confidenceValue));
         }
         //photoUrl
         String photoUrl = param.getPhotoUrl();
         if(!StringUtils.isEmpty(photoUrl)){
             findFaceParam.setPhotoUrl(photoUrl);
         }
-        findFaceParam.setN(config.getSnapIdentifyNumber());
+        if(StringUtils.isEmpty(param.getIdentifyNumber())){
+            findFaceParam.setN(config.getSnapIdentifyNumber());
+        }else {
+            findFaceParam.setN(param.getIdentifyNumber());
+        }
         findFaceParam.setGalleries(new String[]{config.getSnapGallery()});
         findFaceParam.setSdkIp(config.getSnapSdkIp());
         findFaceParam.setSdkPort(config.getSnapSdkPort());

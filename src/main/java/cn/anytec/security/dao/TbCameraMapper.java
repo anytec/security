@@ -22,6 +22,8 @@ public interface TbCameraMapper {
 
     TbCamera selectByPrimaryKey(Integer id);
 
+    List<TbCamera> selectInCameraSdkIds(List<String> cameraSdkIds);
+
     int updateByExampleSelective(@Param("record") TbCamera record, @Param("example") TbCameraExample example);
 
     int updateByExample(@Param("record") TbCamera record, @Param("example") TbCameraExample example);
@@ -31,4 +33,5 @@ public interface TbCameraMapper {
     int updateByPrimaryKey(TbCamera record);
 
     List<Map<String,Object>> selectServerLabel();
+
 }

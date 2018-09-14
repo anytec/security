@@ -4,7 +4,7 @@
   <resultMap id="BaseResultMap" type="cn.anytec.security.model.TbUser" >
     <id column="id" property="id" jdbcType="INTEGER" />
     <result column="avatar" property="avatar" jdbcType="VARCHAR" />
-    <result column="accent" property="accent" jdbcType="VARCHAR" />
+    <result column="account" property="account" jdbcType="VARCHAR" />
     <result column="uname" property="uname" jdbcType="VARCHAR" />
     <result column="upass" property="upass" jdbcType="VARCHAR" />
     <result column="contact" property="contact" jdbcType="VARCHAR" />
@@ -71,7 +71,7 @@
     </where>
   </sql>
   <sql id="Base_Column_List" >
-    id, avatar, accent, uname, upass, contact, role, status, notes
+    id, avatar, account, uname, upass, contact, role, status, notes
   </sql>
   <select id="selectByExample" resultMap="BaseResultMap" parameterType="cn.anytec.security.model.TbUserExample" >
     select
@@ -104,11 +104,11 @@
     </if>
   </delete>
   <insert id="insert" parameterType="cn.anytec.security.model.TbUser" >
-    insert into tb_user (id, avatar, accent, 
+    insert into tb_user (id, avatar, account,
       uname, upass, contact, 
       role, status, notes
       )
-    values (#{id,jdbcType=INTEGER}, #{avatar,jdbcType=VARCHAR}, #{accent,jdbcType=VARCHAR}, 
+    values (#{id,jdbcType=INTEGER}, #{avatar,jdbcType=VARCHAR}, #{account,jdbcType=VARCHAR},
       #{uname,jdbcType=VARCHAR}, #{upass,jdbcType=VARCHAR}, #{contact,jdbcType=VARCHAR}, 
       #{role,jdbcType=INTEGER}, #{status,jdbcType=INTEGER}, #{notes,jdbcType=VARCHAR}
       )
@@ -122,8 +122,8 @@
       <if test="avatar != null" >
         avatar,
       </if>
-      <if test="accent != null" >
-        accent,
+      <if test="account != null" >
+        account,
       </if>
       <if test="uname != null" >
         uname,
@@ -151,8 +151,8 @@
       <if test="avatar != null" >
         #{avatar,jdbcType=VARCHAR},
       </if>
-      <if test="accent != null" >
-        #{accent,jdbcType=VARCHAR},
+      <if test="account != null" >
+        #{account,jdbcType=VARCHAR},
       </if>
       <if test="uname != null" >
         #{uname,jdbcType=VARCHAR},
@@ -189,8 +189,8 @@
       <if test="record.avatar != null" >
         avatar = #{record.avatar,jdbcType=VARCHAR},
       </if>
-      <if test="record.accent != null" >
-        accent = #{record.accent,jdbcType=VARCHAR},
+      <if test="record.account != null" >
+        account = #{record.account,jdbcType=VARCHAR},
       </if>
       <if test="record.uname != null" >
         uname = #{record.uname,jdbcType=VARCHAR},
@@ -219,7 +219,7 @@
     update tb_user
     set id = #{record.id,jdbcType=INTEGER},
       avatar = #{record.avatar,jdbcType=VARCHAR},
-      accent = #{record.accent,jdbcType=VARCHAR},
+      account = #{record.account,jdbcType=VARCHAR},
       uname = #{record.uname,jdbcType=VARCHAR},
       upass = #{record.upass,jdbcType=VARCHAR},
       contact = #{record.contact,jdbcType=VARCHAR},
@@ -236,8 +236,8 @@
       <if test="avatar != null" >
         avatar = #{avatar,jdbcType=VARCHAR},
       </if>
-      <if test="accent != null" >
-        accent = #{accent,jdbcType=VARCHAR},
+      <if test="account != null" >
+        account = #{account,jdbcType=VARCHAR},
       </if>
       <if test="uname != null" >
         uname = #{uname,jdbcType=VARCHAR},
@@ -263,7 +263,7 @@
   <update id="updateByPrimaryKey" parameterType="cn.anytec.security.model.TbUser" >
     update tb_user
     set avatar = #{avatar,jdbcType=VARCHAR},
-      accent = #{accent,jdbcType=VARCHAR},
+      account = #{account,jdbcType=VARCHAR},
       uname = #{uname,jdbcType=VARCHAR},
       upass = #{upass,jdbcType=VARCHAR},
       contact = #{contact,jdbcType=VARCHAR},

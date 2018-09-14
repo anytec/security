@@ -1,5 +1,7 @@
 package cn.anytec.security.interceptor;
 
+import cn.anytec.security.core.enums.SecurityExceptionEnum;
+import cn.anytec.security.core.exception.BussinessException;
 import cn.anytec.security.model.TbUser;
 import org.springframework.lang.Nullable;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -14,8 +16,7 @@ public class LoginInterceptor implements HandlerInterceptor {
         boolean flag =true;
         TbUser user = (TbUser) request.getSession().getAttribute("currentUser");
         if(null == user){
-            response.sendRedirect("/index");
-            flag = false;
+            throw new BussinessException(SecurityExceptionEnum.UNAUTHORIZED);
         }else {
             flag = true;
         }

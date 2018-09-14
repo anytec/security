@@ -20,9 +20,10 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @OperLog(value = "注册用户", key = "account")
     @PostMapping("/login")
-    public ServerResponse<UserVO> login(String uname, String upass, HttpSession session){
-        return userService.login(uname,upass, session);
+    public ServerResponse<UserVO> login(String account, String upass, HttpSession session){
+        return userService.login(account,upass, session);
     }
 
     @PostMapping("/logout")
@@ -34,28 +35,32 @@ public class UserController {
     @OperLog(value = "注册用户", key = "uname,notes")
     @Permission(value = "注册用户", method = PermissionType.IS_ADMIN)
     @PostMapping("/register")
-    public ServerResponse<String> register(TbUser user){
+    public ServerResponse register(TbUser user){
         return userService.register(user);
     }
 
     @PostMapping("/checkUsername")
     public ServerResponse<String> checkUsername(String username){
-        return userService.checkUsername(username);
+        return userService.checkaccount(username);
     }
 
     //@OperLog("查询用户详情信息")
     @PostMapping("/getUserInfo")
     public ServerResponse<UserVO> getUserInfo(@RequestParam(value = "id") Integer id){
         ServerResponse<UserVO> response = userService.getInformation(id);
-        LogObjectHolder.me().set(response.getData());
         return response;
     }
 
-    @OperLog("修改用户信息")
+    @OperLog(value = "修改用户信息", key = "avatar,uname,contact,notes")
     @Permission(value = "修改用户信息", method = PermissionType.IS_ADMIN)
     @PostMapping("/update")
     public ServerResponse update(TbUser user){
-        return userService.update(user);
+//        return userService.update(userVO);
+        if (user != null && user.getId() > 0) {
+            return userService.update(user);
+        }else {
+            return ServerResponse.createByErrorMessage("用户ID不能为空");
+        }
     }
 
     //@OperLog(value = "查询用户列表", key = "pageNum,pageSize,keyword")

@@ -179,4 +179,16 @@ public class GroupCameraServiceImpl implements GroupCameraService {
         }
         return null;
     }
+
+    @Override
+    public boolean isCameraGroupNameExist(String cameraGroupName) {
+        TbGroupCameraExample example = new TbGroupCameraExample();
+        TbGroupCameraExample.Criteria c = example.createCriteria();
+        c.andNameEqualTo(cameraGroupName);
+        List<TbGroupCamera> groupCameraList = groupCameraMapper.selectByExample(example);
+        if(!CollectionUtils.isEmpty(groupCameraList)){
+            return true;
+        }
+        return false;
+    }
 }

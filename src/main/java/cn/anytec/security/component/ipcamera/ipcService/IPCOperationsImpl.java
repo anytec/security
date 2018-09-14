@@ -1,5 +1,9 @@
 package cn.anytec.security.component.ipcamera.ipcService;
 
+import cn.anytec.security.common.ServerResponse;
+import cn.anytec.security.core.enums.CameraType;
+import cn.anytec.security.core.enums.CaptureCameraStatus;
+import cn.anytec.security.core.exception.BussinessException;
 import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.service.CameraService;
 import org.apache.commons.lang3.StringUtils;
@@ -15,9 +19,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -27,13 +34,15 @@ public class IPCOperationsImpl implements IPCOperations {
 
     private final Logger logger = LoggerFactory.getLogger(IPCOperationsImpl.class);
     @Autowired
-    public RedisTemplate redisTemplate;
+    private RedisTemplate redisTemplate;
     @Autowired
     private RestTemplate restTemplate;
     @Autowired
     private CameraService cameraService;
     @Value("${redisKeys.captureCameras}")
     private String captureCameras;
+    @Value("${redisKeys.captureCamerasInUse}")
+    private String captureCamerasInUse;
 
 
  /*   @Scheduled(fixedDelay = 60000)
@@ -55,40 +64,123 @@ public class IPCOperationsImpl implements IPCOperations {
     }*/
 
     @Override
-    public boolean addToCache(String mac, String ipAddress) {
-        if(!StringUtils.isEmpty(mac) && !StringUtils.isEmpty(ipAddress)){
-            redisTemplate.opsForHash().put(captureCameras,mac,ipAddress);
-            redisTemplate.expire(captureCameras, 1, TimeUnit.DAYS);
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public void deleteFromCache(String mac) {
-        if(!StringUtils.isEmpty(mac)){
-            redisTemplate.opsForHash().delete(captureCameras,mac);
+    @Transactional
+    public void handleAddCaptureCamera(TbCamera camera) {
+        if((CameraType.CaptureCamera.getMsg()).equals(camera.getCameraType())){
+            String macAddress = camera.getServerLabel();
+            standbyCaptureCamera(macAddress);
+            addToInUseCache(macAddress);
+            deleteFromCache(macAddress);
         }
     }
 
     @Override
-    public boolean activeCaptureCamera(String macAddress, String ipcAddress) {
-        String url = "http://"+ipcAddress+"/goform/status?mac="+macAddress+"&operation=active";
-        return ipcHttpGet(url);
+    public boolean addToCache(String macAddress, String ipAddress) {
+        logger.info("【addToCache】mac: "+macAddress+" ip: "+ipAddress);
+        if(StringUtils.isEmpty(macAddress)){
+            logger.error("【addToCache】mac地址为空，添加抓拍机失败！");
+            return false;
+        }
+        if(StringUtils.isEmpty(ipAddress)){
+            logger.error("【addToCache】ip地址为空，添加抓拍机失败！");
+        }
+        redisTemplate.opsForHash().put(captureCameras,macAddress,ipAddress);
+        //redisTemplate.expire(captureCameras, 1, TimeUnit.DAYS);
+        return true;
     }
 
     @Override
-    public boolean invalidCaptureCamera(String macAddress, String ipcAddress) {
-        String url = "http://"+ipcAddress+"/goform/status?mac="+macAddress+"&operation=invalid";
-        return ipcHttpGet(url);
+    public void deleteFromCache(String macAddress) {
+        logger.info("【deleteFromCache】mac: "+macAddress);
+        if(StringUtils.isEmpty(macAddress)){
+            throw new BussinessException(1,"【deleteFromCache】mac地址为空，删除抓拍机失败！");
+        }
+        redisTemplate.opsForHash().delete(captureCameras,macAddress);
     }
 
-    public Map<String,String> getCaptureCameras(){
+    @Override
+    public void addToInUseCache(String macAddress) {
+        logger.info("【addToInUseCache】mac: "+macAddress);
+        if(StringUtils.isEmpty(macAddress)){
+            throw new BussinessException(1,"【addToInUseCache】mac地址为空，添加抓拍机失败！");
+        }
+        String ipAddress = (String) redisTemplate.opsForHash().get(captureCameras,macAddress);
+        if(StringUtils.isEmpty(ipAddress)){
+            throw new BussinessException(1,"【addToInUseCache】ip地址为空，添加抓拍机失败！");
+        }
+        redisTemplate.opsForHash().put(captureCamerasInUse,macAddress,ipAddress);
+        //redisTemplate.expire(captureCamerasInUse, 1, TimeUnit.DAYS);
+    }
+
+    @Override
+    public void deleteFromInUseCache(String macAddress) {
+        logger.info("【deleteFromInUseCache】mac: "+macAddress);
+        if(StringUtils.isEmpty(macAddress)){
+            throw new BussinessException(1,"【deleteFromInUseCache】mac地址为空，删除抓拍机失败！");
+        }
+        String ipAddress = (String) redisTemplate.opsForHash().get(captureCameras,macAddress);
+        if(StringUtils.isEmpty(ipAddress)){
+            throw new BussinessException(1,"【deleteFromInUseCache】ip地址为空，删除抓拍机失败！");
+        }
+        redisTemplate.opsForHash().put(captureCameras,macAddress,ipAddress);
+        redisTemplate.opsForHash().delete(captureCamerasInUse,macAddress);
+    }
+
+    @Override
+    public void activeCaptureCamera(String macAddress) {
+        logger.info("【activeCaptureCamera】mac: "+macAddress);
+        String ipAddress = (String) redisTemplate.opsForHash().get(captureCamerasInUse,macAddress);
+        if(StringUtils.isEmpty(ipAddress)){
+            ipAddress = (String) redisTemplate.opsForHash().get(captureCameras,macAddress);
+        }
+        if(StringUtils.isEmpty(ipAddress)){
+            throw new BussinessException(1,"抓拍机 "+macAddress+" 获取不到ip,转换状态active失败");
+        }
+        String active = CaptureCameraStatus.ACCEPTED.getMsg();
+        String url = "http://"+ipAddress+"/goform/status?mac="+macAddress+"&operation="+active;
+        ipcHttpGet(url);
+    }
+
+    @Override
+    public void standbyCaptureCamera(String macAddress) {
+        logger.info("【standbyCaptureCamera】mac: "+macAddress);
+        String ipAddress = (String) redisTemplate.opsForHash().get(captureCamerasInUse,macAddress);
+        if(StringUtils.isEmpty(ipAddress)){
+            ipAddress = (String) redisTemplate.opsForHash().get(captureCameras,macAddress);
+        }
+        if(StringUtils.isEmpty(ipAddress)){
+            throw new BussinessException(1,"抓拍机 "+macAddress+" 获取不到ip,转换状态standby失败");
+        }
+        String standby = CaptureCameraStatus.STANDBY.getMsg();
+        String url = "http://"+ipAddress+"/goform/status?mac="+macAddress+"&operation="+standby;
+        ipcHttpGet(url);
+    }
+
+    @Override
+    public void invalidCaptureCamera(String macAddress) {
+        logger.info("【invalidCaptureCamera】mac: "+macAddress);
+        String ipAddress = (String) redisTemplate.opsForHash().get(captureCamerasInUse,macAddress);
+        if(StringUtils.isEmpty(ipAddress)){
+            ipAddress = (String) redisTemplate.opsForHash().get(captureCameras,macAddress);
+        }
+        if(StringUtils.isEmpty(ipAddress)){
+            throw new BussinessException(1,"抓拍机 "+macAddress+" 获取不到ip,转换状态invalid失败");
+        }
+        String invalid = CaptureCameraStatus.INVAILD.getMsg();
+        String url = "http://"+ipAddress+"/goform/status?mac="+macAddress+"&operation="+invalid;
+        ipcHttpGet(url);
+    }
+
+    public ServerResponse getCaptureCameras(){
+        List<String> macList = new ArrayList<>();
         Map<String,String> result = redisTemplate.opsForHash().entries(captureCameras);
-        return result;
+        result.forEach((mac,ip)->{
+            macList.add(mac);
+        });
+        return ServerResponse.createBySuccess(macList);
     }
 
-    private boolean ipcHttpGet(String url){
+    private void ipcHttpGet(String url){
         HttpHeaders requestHeaders = new HttpHeaders();
         HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(null, requestHeaders);
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
@@ -96,9 +188,8 @@ public class IPCOperationsImpl implements IPCOperations {
         logger.info("ipc response: "+result);
         int statusCode = response.getStatusCodeValue();
         logger.info("ipc response statuscode: "+statusCode);
-        if(statusCode == 200){
-            return true;
+        if(statusCode != 200){
+            throw new BussinessException(1,"修改抓拍机状态失败,statuscode："+statusCode);
         }
-        return false;
     }
 }

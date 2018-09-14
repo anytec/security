@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface PersonService {
     TbPerson getPersonInfo(Integer personId);
+    boolean checkIdNumber(String idNumber);
     ServerResponse add(PersonVO personVO);
     ServerResponse<String> delete(String personSdkIds);
     ServerResponse update(PersonVO personVO);
