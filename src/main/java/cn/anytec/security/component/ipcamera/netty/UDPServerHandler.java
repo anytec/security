@@ -1,6 +1,8 @@
 package cn.anytec.security.component.ipcamera.netty;
 
 import cn.anytec.security.component.ipcamera.ipcService.IPCOperations;
+import cn.anytec.security.model.TbCamera;
+import cn.anytec.security.service.CameraService;
 import com.alibaba.fastjson.JSONObject;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -24,6 +26,8 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 
     @Autowired
     private IPCOperations ipcOperations;
+    @Autowired
+    private CameraService cameraService;
    /* @Autowired
     private ProcessorMetrics processorMetrics;*/
 
@@ -36,7 +40,16 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
         if (request != null && request.containsKey("ipAddress") && request.containsKey("macAddress")) {
             String macAddress=request.getString("macAddress");
             String ipAddress = request.getString("ipAddress");
-            if(ipcOperations.addToCache(macAddress,ipAddress)){
+            boolean flag = true ;
+            TbCamera camera = cameraService.getCameraBySdkId(macAddress);
+            if(camera != null){
+                if(camera.getCameraStatus().equals(1)){
+                    ipcOperations.activeCaptureCamera(macAddress);
+                }
+            }else {
+                flag = ipcOperations.addToCache(macAddress,ipAddress);
+            }
+            if(flag){
                 channelHandlerContext.writeAndFlush(
                         new DatagramPacket(Unpooled.copiedBuffer("accepted",
                                 CharsetUtil.UTF_8), datagramPacket.sender()));

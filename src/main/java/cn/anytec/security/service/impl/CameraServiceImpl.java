@@ -65,7 +65,7 @@ public class CameraServiceImpl implements CameraService {
         if (camera != null) {
             String cameraSdkId = camera.getSdkId();
             if ((CameraType.CaptureCamera.getMsg()).equals(camera.getCameraType())) {
-                ipcOperations.handleAddCaptureCamera(cameraSdkId);
+                ipcOperations.standbyCaptureCamera(cameraSdkId);
                 camera.setServerLabel(CameraType.CaptureCamera.getMsg());
             } else {
                 cameraSdkId = UUID.randomUUID().toString();
@@ -147,17 +147,29 @@ public class CameraServiceImpl implements CameraService {
 
     public ServerResponse<TbCamera> update(TbCamera camera) {
         TbCamera cam = getById(camera.getId());
+        String cameraSdkId = cam.getSdkId();
         if (cam.getCameraType().equals(CameraType.CaptureCamera.getMsg())) {
-            if (camera.getCameraStatus() == 0) {
-                ipcOperations.standbyCaptureCamera(cam.getSdkId());
-                ipcOperations.addToCache(cam.getSdkId());
-                ipcOperations.deleteFromInUseCache(cam.getSdkId());
-            } else if (camera.getCameraStatus() == 1) {
-                ipcOperations.activeCaptureCamera(cam.getSdkId());
-                ipcOperations.addToInUseCache(cam.getSdkId());
-                ipcOperations.deleteFromCache(cam.getSdkId());
-
+            if(!StringUtils.isEmpty(camera.getSdkId()) && !cameraSdkId.equals(camera.getSdkId())){
+                cameraSdkId = camera.getSdkId();
+                if (camera.getCameraStatus() == 0) {
+                    ipcOperations.standbyCaptureCamera(cameraSdkId);
+                } else if (camera.getCameraStatus() == 1) {
+                    ipcOperations.activeCaptureCamera(cameraSdkId);
+                    ipcOperations.addToInUseCache(cameraSdkId);
+                    ipcOperations.deleteFromCache(cameraSdkId);
+                }
+            }else {
+                if (camera.getCameraStatus() == 0) {
+                    ipcOperations.standbyCaptureCamera(cam.getSdkId());
+                    ipcOperations.addToCache(cam.getSdkId());
+                    ipcOperations.deleteFromInUseCache(cam.getSdkId());
+                } else if (camera.getCameraStatus() == 1) {
+                    ipcOperations.activeCaptureCamera(cam.getSdkId());
+                    ipcOperations.addToInUseCache(cam.getSdkId());
+                    ipcOperations.deleteFromCache(cam.getSdkId());
+                }
             }
+
         }
         int updateCount = cameraMapper.updateByPrimaryKeySelective(camera);
         if (updateCount > 0) {
@@ -209,7 +221,7 @@ public class CameraServiceImpl implements CameraService {
             object.put("url", tbCamera.getStreamAddress());
             list.add(object);
         });
-        System.out.println(JSONArray.toJSONString(list));
+        logger.debug(JSONArray.toJSONString(list));
         return JSONArray.toJSONString(list);
     }
 

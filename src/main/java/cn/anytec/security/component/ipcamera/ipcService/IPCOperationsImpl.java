@@ -62,14 +62,6 @@ public class IPCOperationsImpl implements IPCOperations {
     }*/
 
     @Override
-    @Transactional
-    public void handleAddCaptureCamera(String macAddress) {
-            standbyCaptureCamera(macAddress);
-            addToInUseCache(macAddress);
-            deleteFromCache(macAddress);
-    }
-
-    @Override
     public boolean addToCache(String macAddress, String ipAddress) {
         logger.info("【addToCache】mac: "+macAddress+" ip: "+ipAddress);
         if(StringUtils.isEmpty(macAddress)){
@@ -150,7 +142,7 @@ public class IPCOperationsImpl implements IPCOperations {
         if(StringUtils.isEmpty(ipAddress)){
             throw new BussinessException(1,"抓拍机 "+macAddress+" 获取不到ip,转换状态active失败");
         }
-        String active = CaptureCameraStatus.ACCEPTED.getMsg();
+        String active = CaptureCameraStatus.ACTIVE.getMsg();
         String url = "http://"+ipAddress+"/goform/status?mac="+macAddress+"&operation="+active;
         ipcHttpGet(url);
     }

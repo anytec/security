@@ -6,7 +6,7 @@ package cn.anytec.security.core.enums;
  * @date 2018/9/13 10:25
  */
 public enum  CaptureCameraStatus {
-    ACCEPTED("accepted"),
+    ACTIVE("active"),
     STANDBY("standby"),
     INVAILD("invaild");
 

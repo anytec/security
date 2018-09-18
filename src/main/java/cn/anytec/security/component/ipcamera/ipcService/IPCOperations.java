@@ -7,10 +7,6 @@ import java.util.Map;
 
 /**用于抓拍机的处理*/
 public interface IPCOperations {
-
-    /**添加抓拍机的处理*/
-    void handleAddCaptureCamera(String macAddress);
-
     /**删除抓拍机的处理*/
     //void handleDeleteCaptureCamera();
 

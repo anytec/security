@@ -27,6 +27,7 @@ public class FFmpegStreamTask extends Thread {
 
             ProcessBuilder builder = new ProcessBuilder(cmds);
             builder.redirectErrorStream(true);
+            logger.info("【ffmpeg command】 {}",cmds.toString());
             process=builder.start();
 
             this.existValue = process.waitFor();
