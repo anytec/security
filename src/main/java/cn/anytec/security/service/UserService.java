@@ -19,7 +19,7 @@ public interface UserService {
 
     ServerResponse delete(String userIds, HttpSession session);
 
-    ServerResponse update(TbUser userVO);
+    ServerResponse update(TbUser user);
 
     ServerResponse<UserVO> getInformation(Integer userId);
 

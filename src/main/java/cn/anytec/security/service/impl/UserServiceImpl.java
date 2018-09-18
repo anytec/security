@@ -152,8 +152,8 @@ public class UserServiceImpl implements UserService {
 
         TbUser updateUser = new TbUser();
         BeanUtils.copyProperties(user, updateUser, "id","upass", "account", "role");
+        updateUser.setAccount(selectByPrimaryKey.getAccount());
         updateUser.setUpass(user.getUpass() == null ? null : MD5Util.MD5EncodeUtf8(user.getUpass() + config.getPasswordSalt()));
-
         TbUserExample example = new TbUserExample();
         TbUserExample.Criteria criteria = example.createCriteria();
         criteria.andStatusEqualTo(UserStatus.ENABLE);

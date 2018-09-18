@@ -45,9 +45,9 @@ public class GroupCameraController {
     @RequestMapping("/list")
     @ResponseBody
 //    @Permission(value = "查询设备组", method = PermissionType.IS_ADMIN)
-    public ServerResponse list(@RequestParam(value = "pageNum",defaultValue = "0") Integer pageNum,
-                               @RequestParam(value = "pageSize",defaultValue = "0") Integer pageSize,
-                               @RequestParam(value = "groupName",required = false)String groupName){
+    public ServerResponse list(@RequestParam(value = "pageNum", defaultValue = "0") Integer pageNum,
+                               @RequestParam(value = "pageSize", defaultValue = "0") Integer pageSize,
+                               @RequestParam(value = "groupName", required = false)String groupName){
         return groupCameraService.list(pageNum,pageSize,groupName);
     }
 

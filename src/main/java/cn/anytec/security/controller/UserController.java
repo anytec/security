@@ -20,7 +20,7 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    @OperLog(value = "注册用户", key = "account")
+    @OperLog(value = "用户登录", key = "account")
     @PostMapping("/login")
     public ServerResponse<UserVO> login(String account, String upass, HttpSession session){
         return userService.login(account,upass, session);

@@ -6,6 +6,7 @@ import cn.anytec.security.core.annotion.OperLog;
 import cn.anytec.security.core.annotion.Permission;
 import cn.anytec.security.core.enums.PermissionType;
 import cn.anytec.security.model.TbCamera;
+import cn.anytec.security.model.vo.CameraVO;
 import cn.anytec.security.service.CameraService;
 import com.github.pagehelper.PageInfo;
 import org.apache.commons.lang3.StringUtils;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 //@RequestMapping("/camera")
@@ -63,6 +65,10 @@ public class CameraController {
 
         List<TbCamera> cameraList = cameraService.list(pageNum,pageSize,name,groupId,type,serverLabel,status,cameraSdkId);
         PageInfo pageResult = new PageInfo(cameraList);
+        List<CameraVO> cameraVOList = cameraList.stream()
+                .map(e->cameraService.cameraConvertCameraVO(e))
+                .collect(Collectors.toList());
+        pageResult.setList(cameraVOList);
         return ServerResponse.createBySuccess(pageResult);
     }
 

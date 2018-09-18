@@ -9,13 +9,16 @@ import java.util.Map;
 public interface IPCOperations {
 
     /**添加抓拍机的处理*/
-    void handleAddCaptureCamera(TbCamera camera);
+    void handleAddCaptureCamera(String macAddress);
 
     /**删除抓拍机的处理*/
     //void handleDeleteCaptureCamera();
 
     /**将抓拍机加入到redis*/
     boolean addToCache(String macAddress, String ipAddress);
+
+    /**将抓拍机加入到redis*/
+    boolean addToCache(String macAddress);
 
     /**将抓拍机从redis中移除*/
     void deleteFromCache(String macAddress);

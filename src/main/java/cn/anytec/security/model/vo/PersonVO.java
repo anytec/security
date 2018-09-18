@@ -1,39 +1,43 @@
 package cn.anytec.security.model.vo;
 
-import org.springframework.web.multipart.MultipartFile;
+import java.util.Date;
 
-import javax.validation.constraints.NotEmpty;
-
+/**
+ * @Description: TODO
+ * @author: zhao
+ * @date 2018/9/17 20:09
+ */
 public class PersonVO {
     private Integer id;
-    private String sdkId;
+
     private String name;
 
-    @NotEmpty(message = "标志编号必填")
     private String idNumber;
 
-    @NotEmpty(message = "性别必填")
+    private String sdkId;
+
     private String gender;
 
-    private MultipartFile photo;
-    private String photoUrl;
-    private Integer groupId;
-    private String groupName;
+    private Date enrollTime;
+
+    private String normalized;
+
+    private String thumbnail;
+
+    private String photo;
+
     private String remarks;
+
+    private Integer groupId;
+
+    private String groupName;
 
     public Integer getId() {
         return id;
     }
-    public void setId(int id) {
+
+    public void setId(Integer id) {
         this.id = id;
-    }
-
-    public String getSdkId() {
-        return sdkId;
-    }
-
-    public void setSdkId(String sdkId) {
-        this.sdkId = sdkId;
     }
 
     public String getName() {
@@ -41,7 +45,7 @@ public class PersonVO {
     }
 
     public void setName(String name) {
-        this.name = name;
+        this.name = name == null ? null : name.trim();
     }
 
     public String getIdNumber() {
@@ -49,7 +53,15 @@ public class PersonVO {
     }
 
     public void setIdNumber(String idNumber) {
-        this.idNumber = idNumber;
+        this.idNumber = idNumber == null ? null : idNumber.trim();
+    }
+
+    public String getSdkId() {
+        return sdkId;
+    }
+
+    public void setSdkId(String sdkId) {
+        this.sdkId = sdkId == null ? null : sdkId.trim();
     }
 
     public String getGender() {
@@ -57,23 +69,47 @@ public class PersonVO {
     }
 
     public void setGender(String gender) {
-        this.gender = gender;
+        this.gender = gender == null ? null : gender.trim();
     }
 
-    public MultipartFile getPhoto() {
+    public Date getEnrollTime() {
+        return enrollTime;
+    }
+
+    public void setEnrollTime(Date enrollTime) {
+        this.enrollTime = enrollTime;
+    }
+
+    public String getNormalized() {
+        return normalized;
+    }
+
+    public void setNormalized(String normalized) {
+        this.normalized = normalized == null ? null : normalized.trim();
+    }
+
+    public String getThumbnail() {
+        return thumbnail;
+    }
+
+    public void setThumbnail(String thumbnail) {
+        this.thumbnail = thumbnail == null ? null : thumbnail.trim();
+    }
+
+    public String getPhoto() {
         return photo;
     }
 
-    public void setPhoto(MultipartFile photo) {
-        this.photo = photo;
+    public void setPhoto(String photo) {
+        this.photo = photo == null ? null : photo.trim();
     }
 
-    public String getPhotoUrl() {
-        return photoUrl;
+    public String getRemarks() {
+        return remarks;
     }
 
-    public void setPhotoUrl(String photoUrl) {
-        this.photoUrl = photoUrl;
+    public void setRemarks(String remarks) {
+        this.remarks = remarks == null ? null : remarks.trim();
     }
 
     public Integer getGroupId() {
@@ -89,15 +125,6 @@ public class PersonVO {
     }
 
     public void setGroupName(String groupName) {
-        this.groupName = groupName;
+        this.groupName = groupName == null ? null : groupName.trim();
     }
-
-    public String getRemarks() {
-        return remarks;
-    }
-
-    public void setRemarks(String remarks) {
-        this.remarks = remarks;
-    }
-
 }

@@ -1,0 +1,120 @@
+server:
+  ip: 192.168.10.179
+  port: 9999
+sanpCamera:
+  port: 9998
+spring:
+  application:
+    name: Security
+  level:
+    root: info
+  mvc:
+    static-path-pattern: /static/**
+#配置bootAdmin地址
+  boot:
+    admin:
+      client:
+        url: http://localhost:8080
+        service-base-url: http://192.168.10.158
+  resources:
+    static-locations: classpath:/static/,file:${file.map.path},file:${file.personPhotos.path}
+
+file:
+  map:
+    path: /home/n-tech-zhao/map/
+  personPhotos:
+    path: D:\personPhotos\
+
+mybatis:
+  mapperLocations: classpath:mapper/*.xml
+
+#  hostIp: 192.168.10.132
+#  port: 8000
+#  token: GxSW-JKSD
+#snapSdk:
+#  hostIp: 192.168.10.212
+#  port: 8000
+#  token: F3Pv-TNLh
+#  url: http://192.168.10.212:8000
+#  version: v1
+#  identifyType: biggest
+#  snapGallery: 158Snap
+#  snapIdentifyNumber: 10
+#  emotionsOpen: true
+#  genderOpen: true
+#  ageOpen: true
+snapSdk:
+  hostIp: 192.168.10.213
+  port: 8000
+  token: e3Z7-9Jbf
+  url: http://192.168.10.213:8000
+  version: v1
+  identifyType: biggest
+  snapGallery: default
+  snapIdentifyNumber: 10
+  emotionsOpen: true
+  genderOpen: true
+  ageOpen: true
+staticSdk:
+  hostIp: 192.168.10.212
+  port: 8000
+  token: F3Pv-TNLh
+  url: http://192.168.10.212:8000
+  version: v1
+  warningThreshold: 0.7
+  staticGallery: 179Static
+
+redisKeys:
+  cameraBySdkId: getCameraBySdkId
+  cameraGroupById: getCameraGroupById
+  peronBySdkId: getPersonBySdkId
+  personGroupById: getPersonGroupById
+  personCounting: personCounting
+  warningThreshold: warningThrehsold
+  captureCameras: captureCameras
+  captureCamerasInUse: captureCamerasInUse
+# mongodb
+mongo:
+  host: 127.0.0.1
+  databaseNames: security
+  snapshotCollection: snapshot
+  warningFaceCollection: warning_face
+
+
+constant:
+  camera: ${staticSdk.url}/${staticSdk.version}/camera
+  serverLabel: ${server.port}-security
+
+camera:
+  allProcess: stream-active
+  rtmpPrefix: rtmp://192.168.10.158:1936/myapp/
+
+
+password:
+  salt: zhaosdafaqj23ou89ZXcj@#$@#$#@KJdjklj;D../dSF.,
+role:
+  user: 0
+  admin: 1
+
+
+# info 配置项（/actuator/info）
+info:
+  author: anytec
+  email: anytec@anytec.cn
+  version: 1.0.0
+
+# 配置 actuator 加载所有的端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+        exclude: ''
+  endpoint:
+    health:
+      show-details: always
+# 离线地图用到
+mapper:
+    mappers:
+         - cn.anytec.security.dao.MyMapper
+    not-empty: false

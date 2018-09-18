@@ -52,7 +52,7 @@ public class MainController {
     public void receiveSnap(String cam_id, String timestamp, String bbox,
                             @RequestParam("photo") MultipartFile photo,
                             @RequestParam(value = "face0",required = false) MultipartFile face0) {
-        logger.info("invoke_function: { receiveSnap }");
+        logger.info("【receiveSnap】cameraSdkId: {}",cam_id);
         if (photo != null) {
             frDataHandler.recieveSnap(cam_id,timestamp,bbox,photo);
         }else {
