@@ -214,11 +214,15 @@ public class MongoDBServiceImpl implements MongoDBService {
 
     private void insertCameraData(List<JSONObject> dataList) {
         for (JSONObject data : dataList) {
+            //to do 不要循环发请求
             String cameraSdkId = data.getString("cameraSdkId");
             if(!StringUtils.isEmpty(cameraSdkId)){
                 TbCamera camera = cameraService.getCameraBySdkId(cameraSdkId);
+                TbGroupCamera cameraGroup = groupCameraService.getGroupCameraById(camera.getGroupId().toString());
                 data.put("cameraName", camera.getName());
-                data.put("cameraGroupName", camera.getGroupName());
+                if(cameraGroup != null){
+                    data.put("cameraGroupName", cameraGroup.getName());
+                }
             }
         }
     }
@@ -289,8 +293,11 @@ public class MongoDBServiceImpl implements MongoDBService {
             if(!StringUtils.isEmpty(cameraSdkId)){
                 TbCamera camera = cameraService.getCameraBySdkId(cameraSdkId);
                 data.put("cameraName", camera.getName());
-                data.put("cameraGroupName", camera.getGroupName());
                 data.put("cameraStatus",camera.getCameraStatus());
+                TbGroupCamera cameraGroup = groupCameraService.getGroupCameraById(camera.getGroupId().toString());
+                if(cameraGroup != null){
+                    data.put("cameraGroupName", cameraGroup.getName());
+                }
             }
             if(cameraSnapCount.containsKey(cameraSdkId)){
                 data.put("snapCount",Integer.parseInt(cameraSnapCount.get(cameraSdkId).toString()));

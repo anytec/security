@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.Date;
 
 public class FFmpegStreamTask extends Thread {
@@ -27,6 +28,7 @@ public class FFmpegStreamTask extends Thread {
 
             ProcessBuilder builder = new ProcessBuilder(cmds);
             builder.redirectErrorStream(true);
+            logger.info("【ffmpeg command】 {}", Arrays.toString(cmds));
             process=builder.start();
 
             this.existValue = process.waitFor();

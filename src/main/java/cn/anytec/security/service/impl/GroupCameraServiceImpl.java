@@ -11,7 +11,7 @@ import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.model.TbCameraExample;
 import cn.anytec.security.model.TbGroupCamera;
 import cn.anytec.security.model.TbGroupCameraExample;
-import cn.anytec.security.model.vo.CameraVO;
+import cn.anytec.security.model.dto.CameraDTO;
 import cn.anytec.security.service.GroupCameraService;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.PageHelper;
@@ -94,8 +94,8 @@ public class GroupCameraServiceImpl implements GroupCameraService {
                 List<TbCamera> camList = cameraMapper.selectByExample(cameraExample);
                 if(camList.size()>0){
                     TbCamera camera = camList.get(0);
-                    String groupName = camera.getGroupName();
-                    return ServerResponse.createByErrorMessage("设备组里还有设备成员,不能删除设备组: "+groupName);
+                    Integer groupId = camera.getGroupId();
+                    return ServerResponse.createByErrorMessage("设备组里还有设备成员,不能删除设备组: "+groupId);
                 }
                 TbGroupCameraExample groupExample = new TbGroupCameraExample();
                 TbGroupCameraExample.Criteria groupC = groupExample.createCriteria();
@@ -125,9 +125,9 @@ public class GroupCameraServiceImpl implements GroupCameraService {
     }
 
     @Override
-    public ServerResponse<Map<String,List<CameraVO>>> getAllCameras(String status) {
+    public ServerResponse<Map<String,List<CameraDTO>>> getAllCameras(String status) {
         List<String>  keyList = new ArrayList<>();
-        Map<String,List<CameraVO>> allCamera = new HashMap<>();
+        Map<String,List<CameraDTO>> allCamera = new HashMap<>();
         TbGroupCameraExample example = new TbGroupCameraExample();
         List<TbGroupCamera> groupCameraList = groupCameraMapper.selectByExample(example);
         if(groupCameraList.size()>0){
@@ -144,17 +144,17 @@ public class GroupCameraServiceImpl implements GroupCameraService {
                    }
                }
                List<TbCamera> cameraList = cameraMapper.selectByExample(cexm);
-               List<CameraVO> cameraVOList = new ArrayList<>();
+               List<CameraDTO> cameraDTOList = new ArrayList<>();
                if(cameraList.size()>0){
                    for(TbCamera camera : cameraList){
-                       CameraVO cameraVO = new CameraVO();
-                       BeanUtils.copyProperties(camera, cameraVO, "");
+                       CameraDTO cameraDTO = new CameraDTO();
+                       BeanUtils.copyProperties(camera, cameraDTO, "");
                        long snapCount = mongoDBService.getSnapCountByCameraSdkId(camera.getSdkId());
-                       cameraVO.setSnapCount(snapCount);
-                       cameraVOList.add(cameraVO);
+                       cameraDTO.setSnapCount(snapCount);
+                       cameraDTOList.add(cameraDTO);
                    }
                }
-               allCamera.put(key, cameraVOList);
+               allCamera.put(key, cameraDTOList);
            }
            return ServerResponse.createBySuccess(allCamera);
         }

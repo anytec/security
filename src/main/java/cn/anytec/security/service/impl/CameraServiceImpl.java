@@ -9,15 +9,18 @@ import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.dao.TbCameraMapper;
 import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.model.TbCameraExample;
+import cn.anytec.security.model.TbGroupCamera;
+import cn.anytec.security.model.dto.CameraDTO;
 import cn.anytec.security.service.CameraService;
+import cn.anytec.security.service.GroupCameraService;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.PageHelper;
-import com.github.pagehelper.PageInfo;
 import com.google.common.base.Splitter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +44,8 @@ public class CameraServiceImpl implements CameraService {
     private CameraStreamMonitor cameraStreamMonitor;
     @Autowired
     private GeneralConfig config;
+    @Autowired
+    private GroupCameraService groupCameraService;
 
     @Value("${camera.rtmpPrefix}")
     private String rtmpPrefix;
@@ -49,7 +54,7 @@ public class CameraServiceImpl implements CameraService {
     @Value("${redisKeys.captureCamerasInUse}")
     private String captureCamerasInUse;
 
-    public TbCamera getCameraById(Integer cameraId){
+    public TbCamera getCameraById(Integer cameraId) {
         TbCamera camera = cameraMapper.selectByPrimaryKey(cameraId);
         LogObjectHolder.me().set(camera);
         return camera;
@@ -57,12 +62,18 @@ public class CameraServiceImpl implements CameraService {
 
     //添加摄像头
     public ServerResponse<String> add(TbCamera camera) {
-        if (camera != null && camera.getServerLabel() != null) {
-            String cameraSdkId = UUID.randomUUID().toString();
+        if (camera != null) {
+            String cameraSdkId = camera.getSdkId();
+            if ((CameraType.CaptureCamera.getMsg()).equals(camera.getCameraType())) {
+                ipcOperations.standbyCaptureCamera(cameraSdkId);
+                camera.setServerLabel(CameraType.CaptureCamera.getMsg());
+            } else {
+                cameraSdkId = UUID.randomUUID().toString();
+            }
             camera.setSdkId(cameraSdkId);
             camera.setPlayAddress(rtmpPrefix + cameraSdkId);
+            camera.setCameraStatus(0);
             logger.debug("add camera server label:" + camera.getServerLabel());
-            ipcOperations.handleAddCaptureCamera(camera);
             int updateCount = cameraMapper.insertSelective(camera);
             if (updateCount > 0) {
                 return ServerResponse.createBySuccess("添加camera成功", cameraSdkId);
@@ -76,26 +87,35 @@ public class CameraServiceImpl implements CameraService {
         List<String> cameraSdkIdList = Splitter.on(",").splitToList(cameraSdkIds);
         List<TbCamera> cameraList = cameraMapper.selectInCameraSdkIds(cameraSdkIdList);
         for (String cameraSdkId : cameraSdkIdList) {
-            for(TbCamera camera : cameraList){
-                if(camera.getSdkId().equals(cameraSdkId)){
+            for (TbCamera camera : cameraList) {
+                if (camera.getSdkId().equals(cameraSdkId)) {
                     //删除redis里的camera
                     if (redisTemplate.opsForHash().hasKey(cameraBySdkId, cameraSdkId)) {
-                        redisTemplate.opsForHash().delete(cameraBySdkId,cameraSdkId);
+                        redisTemplate.opsForHash().delete(cameraBySdkId, cameraSdkId);
                     }
-                    if(camera.getCameraType().equals(CameraType.CaptureCamera.getMsg())){
+                    if (camera.getCameraType().equals(CameraType.CaptureCamera.getMsg())) {
                         //删除redis里的抓拍机
-                        ipcOperations.invalidCaptureCamera(cameraSdkId);
+                        try {
+                            ipcOperations.invalidCaptureCamera(cameraSdkId);
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
                         ipcOperations.deleteFromInUseCache(cameraSdkId);
+                        ipcOperations.deleteFromCache(cameraSdkId);
                     }
-                    //删除mysql里的camera
-                    TbCameraExample example = new TbCameraExample();
-                    TbCameraExample.Criteria c = example.createCriteria();
-                    c.andSdkIdEqualTo(cameraSdkId);
-                    cameraMapper.deleteByExample(example);
+                    deleteMysqlCamera(cameraSdkId);
                 }
             }
         }
         return ServerResponse.createBySuccess();
+    }
+
+    @Override
+    public void deleteMysqlCamera(String cameraSdkId) {
+        TbCameraExample example = new TbCameraExample();
+        TbCameraExample.Criteria c = example.createCriteria();
+        c.andSdkIdEqualTo(cameraSdkId);
+        cameraMapper.deleteByExample(example);
     }
 
     public List<TbCamera> list(int pageNum, int pageSize, String name, Integer groupId,
@@ -125,39 +145,63 @@ public class CameraServiceImpl implements CameraService {
         return cameraList;
     }
 
+    @Override
+    public CameraDTO cameraConvertToCameraDTO(TbCamera camera) {
+        CameraDTO cameraDTO = new CameraDTO();
+        BeanUtils.copyProperties(camera, cameraDTO);
+        TbGroupCamera cameraGroup = groupCameraService.getGroupCameraById(cameraDTO.getGroupId().toString());
+        cameraDTO.setGroupName(cameraGroup.getName());
+        return cameraDTO;
+    }
+
     public ServerResponse<TbCamera> update(TbCamera camera) {
-        if(camera.getCameraStatus() != null){
-            TbCamera cam = getById(camera.getId());
-            if(cam.getCameraType().equals(CameraType.CaptureCamera.getMsg())){
-                if(camera.getCameraStatus() == 0){
-                    ipcOperations.standbyCaptureCamera(cam.getServerLabel());
-                }else if(camera.getCameraStatus() == 1){
-                    ipcOperations.activeCaptureCamera(cam.getServerLabel());
+        TbCamera cam = getById(camera.getId());
+        String cameraSdkId = cam.getSdkId();
+        if (cam.getCameraType().equals(CameraType.CaptureCamera.getMsg())) {
+            if(!StringUtils.isEmpty(camera.getSdkId()) && !cameraSdkId.equals(camera.getSdkId())){
+                cameraSdkId = camera.getSdkId();
+                if (camera.getCameraStatus() == 0) {
+                    ipcOperations.standbyCaptureCamera(cameraSdkId);
+                } else if (camera.getCameraStatus() == 1) {
+                    ipcOperations.activeCaptureCamera(cameraSdkId);
+                    ipcOperations.addToInUseCache(cameraSdkId);
+                    ipcOperations.deleteFromCache(cameraSdkId);
+                }
+            }else {
+                if (camera.getCameraStatus() == 0) {
+                    ipcOperations.standbyCaptureCamera(cam.getSdkId());
+                    ipcOperations.addToCache(cam.getSdkId());
+                    ipcOperations.deleteFromInUseCache(cam.getSdkId());
+                } else if (camera.getCameraStatus() == 1) {
+                    ipcOperations.activeCaptureCamera(cam.getSdkId());
+                    ipcOperations.addToInUseCache(cam.getSdkId());
+                    ipcOperations.deleteFromCache(cam.getSdkId());
                 }
             }
+
         }
         int updateCount = cameraMapper.updateByPrimaryKeySelective(camera);
         if (updateCount > 0) {
-            TbCamera cam = cameraMapper.selectByPrimaryKey(camera.getId());
-            removeRedisCamera(cam);
+            TbCamera tbCamera = cameraMapper.selectByPrimaryKey(camera.getId());
+            removeRedisCamera(tbCamera);
             return ServerResponse.createBySuccess("更新camera信息成功", camera);
         }
         return ServerResponse.createByErrorMessage("更新camera信息失败");
     }
 
-    private void removeRedisCamera(TbCamera camera){
+    private void removeRedisCamera(TbCamera camera) {
         String redisKey = config.getCameraBySdkId();
         String cameraSdkId = camera.getSdkId();
         if (redisTemplate.opsForHash().hasKey(redisKey, cameraSdkId)) {
-            redisTemplate.opsForHash().delete(redisKey,cameraSdkId);
+            redisTemplate.opsForHash().delete(redisKey, cameraSdkId);
         }
     }
 
     public TbCamera getCameraBySdkId(String sdkId) {
         String redisKey = config.getCameraBySdkId();
         if (redisTemplate.opsForHash().hasKey(redisKey, sdkId)) {
-            String cameraStr =  redisTemplate.opsForHash().get(redisKey, sdkId).toString();
-            TbCamera camera = JSONObject.parseObject(cameraStr,TbCamera.class);
+            String cameraStr = redisTemplate.opsForHash().get(redisKey, sdkId).toString();
+            TbCamera camera = JSONObject.parseObject(cameraStr, TbCamera.class);
             return camera;
         }
         TbCameraExample example = new TbCameraExample();
@@ -186,7 +230,7 @@ public class CameraServiceImpl implements CameraService {
             object.put("url", tbCamera.getStreamAddress());
             list.add(object);
         });
-        System.out.println(JSONArray.toJSONString(list));
+        logger.debug(JSONArray.toJSONString(list));
         return JSONArray.toJSONString(list);
     }
 
@@ -255,7 +299,7 @@ public class CameraServiceImpl implements CameraService {
         TbCameraExample.Criteria c = example.createCriteria();
         c.andNameEqualTo(cameraName);
         List<TbCamera> cameraList = cameraMapper.selectByExample(example);
-        if(!CollectionUtils.isEmpty(cameraList)){
+        if (!CollectionUtils.isEmpty(cameraList)) {
             return true;
         }
         return false;

@@ -1,6 +1,6 @@
-package cn.anytec.security.model.vo;
+package cn.anytec.security.model.dto;
 
-public class CameraVO {
+public class CameraDTO {
     private Integer id;
 
     private String sdkId;

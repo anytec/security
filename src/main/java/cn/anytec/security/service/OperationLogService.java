@@ -1,7 +1,7 @@
 package cn.anytec.security.service;
 
-import cn.anytec.security.model.vo.OperationLogVO;
-import cn.anytec.security.model.vo.OperationRecordVO;
+import cn.anytec.security.model.dto.OperationLogDTO;
+import cn.anytec.security.model.dto.OperationRecordDTO;
 import com.github.pagehelper.PageInfo;
 
 /**
@@ -16,15 +16,15 @@ public interface OperationLogService {
      * @param lastTime 日志结束时间
      * @param logType 日志类型
      */
-    PageInfo<OperationLogVO> list(Integer pageNum, Integer pageSize,
-                                  String firstTime, String lastTime,
-                                  String logType);
+    PageInfo<OperationLogDTO> list(Integer pageNum, Integer pageSize,
+                                   String firstTime, String lastTime,
+                                   String logType);
 
 
     /**
      * 操作记录查询
      */
-    PageInfo<OperationRecordVO> operationRecordList(Integer pageNum, Integer pageSize,
-                                                    String firstTime, String lastTime,
-                                                    String operationType, String uname);
+    PageInfo<OperationRecordDTO> operationRecordList(Integer pageNum, Integer pageSize,
+                                                     String firstTime, String lastTime,
+                                                     String operationType, String uname);
 }

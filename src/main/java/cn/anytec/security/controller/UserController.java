@@ -4,9 +4,8 @@ import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.core.annotion.OperLog;
 import cn.anytec.security.core.annotion.Permission;
 import cn.anytec.security.core.enums.PermissionType;
-import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.model.TbUser;
-import cn.anytec.security.model.vo.UserVO;
+import cn.anytec.security.model.dto.UserDTO;
 import cn.anytec.security.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -20,9 +19,9 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    @OperLog(value = "注册用户", key = "account")
+    @OperLog(value = "登录用户", key = "account")
     @PostMapping("/login")
-    public ServerResponse<UserVO> login(String account, String upass, HttpSession session){
+    public ServerResponse<UserDTO> login(String account, String upass, HttpSession session){
         return userService.login(account,upass, session);
     }
 
@@ -46,8 +45,8 @@ public class UserController {
 
     //@OperLog("查询用户详情信息")
     @PostMapping("/getUserInfo")
-    public ServerResponse<UserVO> getUserInfo(@RequestParam(value = "id") Integer id){
-        ServerResponse<UserVO> response = userService.getInformation(id);
+    public ServerResponse<UserDTO> getUserInfo(@RequestParam(value = "id") Integer id){
+        ServerResponse<UserDTO> response = userService.getInformation(id);
         return response;
     }
 

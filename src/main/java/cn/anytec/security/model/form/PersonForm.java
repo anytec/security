@@ -1,10 +1,10 @@
-package cn.anytec.security.model.vo;
+package cn.anytec.security.model.form;
 
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.constraints.NotEmpty;
 
-public class PersonVO {
+public class PersonForm {
     private Integer id;
     private String sdkId;
     private String name;

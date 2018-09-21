@@ -1,7 +1,7 @@
 package cn.anytec.security.findface;
 
-
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.core.exception.BussinessException;
 import cn.anytec.security.findface.model.*;
 import cn.anytec.security.model.parammodel.FindFaceParam;
 import com.alibaba.fastjson.JSONObject;
@@ -69,7 +69,7 @@ public class FindFaceImpl implements FindFaceService {
             responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, String.class);
         }catch (Exception e){
             logger.error("Http异常："+e.getMessage());
-            return null;
+            throw new BussinessException(1,"请求发生错误");
         }
         int responseCode = responseEntity.getStatusCodeValue();
         String result = responseEntity.getBody();
@@ -77,8 +77,9 @@ public class FindFaceImpl implements FindFaceService {
         if (responseCode == 200) {
             //return JSONObject.parseObject(result, DetectPojo.class);
             return gson.fromJson(result,DetectPojo.class);
+        }else {
+            throw new BussinessException(1,"请求发生错误");
         }
-        return null;
     }
 
 
@@ -106,7 +107,7 @@ public class FindFaceImpl implements FindFaceService {
             responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, String.class);
         }catch (Exception e){
             logger.error("Http异常："+e.getMessage());
-            return null;
+            throw new BussinessException(1,"请求发生错误");
         }
         int responseCode = responseEntity.getStatusCodeValue();
         String result = responseEntity.getBody();
@@ -114,9 +115,8 @@ public class FindFaceImpl implements FindFaceService {
         if (responseCode == 200) {
             //return JSONObject.parseObject(result, VerifyPojo.class);
             return gson.fromJson(result,VerifyPojo.class);
-
         }
-        return null;
+        throw new BussinessException(1,"请求发生错误");
     }
 
     public IdentifyPojo imageIdentify(byte[] photo, FindFaceParam param) {
@@ -162,7 +162,7 @@ public class FindFaceImpl implements FindFaceService {
             responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, String.class);
         }catch (Exception e){
             logger.error("Http异常："+e.getMessage());
-            return null;
+            throw new BussinessException(1,"图片未检测到人脸");
         }
         int responseCode = responseEntity.getStatusCodeValue();
         String result = responseEntity.getBody();
@@ -170,8 +170,9 @@ public class FindFaceImpl implements FindFaceService {
         if (responseCode == 200) {
 //            return JSONObject.parseObject(result, IdentifyPojo.class);
             return gson.fromJson(result,IdentifyPojo.class);
+        }else{
+            throw new BussinessException(responseCode,"请求发生错误");
         }
-        return null;
     }
 
 
@@ -225,14 +226,17 @@ public class FindFaceImpl implements FindFaceService {
             int responseCode = response.getStatusLine().getStatusCode();
             if(responseCode == 200){
                 return gson.fromJson(reply,FacePojo.class);
+            }else if(responseCode == 400){
+                throw new BussinessException(400,"图片未检测到人脸");
             }else {
                 logger.warn("请求未正确响应：" + responseCode);
                 logger.warn(reply);
+                throw new BussinessException(responseCode,"请求未正确响应：" + responseCode);
             }
         } catch (IOException e) {
             e.printStackTrace();
+            throw new BussinessException(1,"请求发生错误");
         }
-        return null;
     }
 
 

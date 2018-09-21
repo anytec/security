@@ -32,10 +32,10 @@ public class MVCConfiguration implements WebMvcConfigurer {
         registry.addResourceHandler("/images/**").addResourceLocations("file:/data/images/");*/
     }
 
-   /* @Override
+    @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new LoginInterceptor())
                 .addPathPatterns("/**")
-                .excludePathPatterns("/user/login","/receiveSnap","/v0/camera","/");
-    }*/
+                .excludePathPatterns("/user/login","/receiveSnap","/v0/camera","/","/static/**");
+    }
 }

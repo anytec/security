@@ -2,16 +2,20 @@ package cn.anytec.security.service.impl;
 
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.core.exception.BussinessException;
 import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.dao.TbPersonMapper;
 import cn.anytec.security.findface.FindFaceService;
 import cn.anytec.security.findface.model.FacePojo;
 import cn.anytec.security.findface.model.IdentifyFace;
+import cn.anytec.security.model.TbGroupPerson;
 import cn.anytec.security.model.TbPerson;
 import cn.anytec.security.model.TbPersonExample;
+import cn.anytec.security.model.form.PersonForm;
 import cn.anytec.security.model.parammodel.FindFaceParam;
+import cn.anytec.security.model.dto.PersonDTO;
+import cn.anytec.security.service.GroupPersonService;
 import cn.anytec.security.service.PersonService;
-import cn.anytec.security.model.vo.PersonVO;
 import cn.anytec.security.util.KeyUtil;
 import cn.anytec.security.util.MD5Util;
 import com.alibaba.fastjson.JSONObject;
@@ -21,6 +25,7 @@ import com.google.common.base.Splitter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -30,12 +35,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.*;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service("PersonService")
 public class PersonServiceImpl implements PersonService {
@@ -48,11 +52,11 @@ public class PersonServiceImpl implements PersonService {
     private RedisTemplate redisTemplate;
     @Autowired
     private GeneralConfig config;
+    @Autowired
+    private GroupPersonService groupPersonService;
 
     @Value("${file.personPhotos.path}")
     private String personPhotosPath;
-    @Value("${server.ip}")
-    private String ip;
     @Value("${server.port}")
     private String port;
 
@@ -74,22 +78,23 @@ public class PersonServiceImpl implements PersonService {
         return false;
     }
 
-    public ServerResponse<TbPerson> add(PersonVO personVO) {
-        MultipartFile photo = personVO.getPhoto();
-        String photoUrl = personVO.getPhotoUrl();
+    public ServerResponse<TbPerson> add(PersonForm personForm) {
+        MultipartFile photo = personForm.getPhoto();
+        String photoUrl = personForm.getPhotoUrl();
+        FindFaceParam param = getStaticFindFaceParam();
+        param.setPhotoUrl(photoUrl);
+        param.setMeta(personForm.getName());
+        FacePojo facePojo = null;
         try {
-            FindFaceParam param = getStaticFindFaceParam();
-            param.setPhotoUrl(photoUrl);
-            param.setMeta(personVO.getName());
-            FacePojo facePojo = addStaticSdkFace(photo,param);
-            if(facePojo != null){
-                TbPerson person = parsePersonVo(personVO, facePojo);
-                if (addMySqlFace(person)) {
-                    return ServerResponse.createBySuccess("添加person成功", person);
-                }
-            }
-        } catch (Exception e) {
+            facePojo = addStaticSdkFace(photo,param);
+        } catch (IOException e) {
             e.printStackTrace();
+        }
+        if(facePojo != null){
+            TbPerson person = parsePersonDTO(personForm, facePojo);
+            if (addMySqlFace(person)) {
+                return ServerResponse.createBySuccess("添加person成功", person);
+            }
         }
         return ServerResponse.createByErrorMessage("添加person失败");
     }
@@ -155,22 +160,22 @@ public class PersonServiceImpl implements PersonService {
         return findFaceService.deleteFace(sdkId);
     }
 
-    public ServerResponse<TbPerson> update(PersonVO personVO) {
-        MultipartFile photo = personVO.getPhoto();
+    public ServerResponse<TbPerson> update(PersonForm personForm) {
+        MultipartFile photo = personForm.getPhoto();
         FacePojo facePojo = null;
         if (photo != null) {
-            String sdkId = personVO.getSdkId();
+            String sdkId = personForm.getSdkId();
             if (deleteSdkFace(sdkId)) {
                 try{
                     FindFaceParam param = getStaticFindFaceParam();
-                    param.setMeta(personVO.getName());
+                    param.setMeta(personForm.getName());
                     facePojo = addStaticSdkFace(photo,param);
-                }catch (Exception e){
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }
-        TbPerson person = parsePersonVo(personVO, facePojo);
+        TbPerson person = parsePersonDTO(personForm, facePojo);
         if(updateMysqlFace(person)){
             TbPerson tbPerson = personMapper.selectByPrimaryKey(person.getId());
             removeRedisPerson(tbPerson);
@@ -237,9 +242,21 @@ public class PersonServiceImpl implements PersonService {
         }
         example.setOrderByClause("enroll_time desc");
         List<TbPerson> personList = personMapper.selectByExample(example);
-        System.out.println(personList.size());
         PageInfo pageResult = new PageInfo(personList);
+        List<PersonDTO> personDTOList = personList.stream()
+                .map(e->personConvertPersonDTO(e))
+                .collect(Collectors.toList());
+        pageResult.setList(personDTOList);
         return ServerResponse.createBySuccess(pageResult);
+    }
+
+    @Override
+    public PersonDTO personConvertPersonDTO(TbPerson person) {
+        PersonDTO personDTO = new PersonDTO();
+        BeanUtils.copyProperties(person, personDTO);
+        TbGroupPerson personGroup = groupPersonService.getGroupPersonById(person.getGroupId().toString()).getData();
+        personDTO.setGroupName(personGroup.getName());
+        return personDTO;
     }
 
     /**
@@ -272,12 +289,55 @@ public class PersonServiceImpl implements PersonService {
                     e.printStackTrace();
                     return null;
                 }
+                String ip = null;
+                try {
+                    ip = getIpAddress();
+                } catch (SocketException e) {
+                    e.printStackTrace();
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
+                }
+                if(StringUtils.isEmpty(ip)){
+                    throw new BussinessException(1,"获取服务器ip地址失败");
+                }
                 String photoPath = "http://"+ip+":"+port+"/static/" + newFileName + "#pn#" + personName;
                 pathList.add(photoPath);
             }
         }
         return pathList;
     }
+
+    /**
+     * 根据网卡获得IP地址
+     * @return
+     * @throws SocketException
+     * @throws UnknownHostException
+     */
+    public  String getIpAddress() throws SocketException, UnknownHostException{
+        String ip="";
+        for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+            NetworkInterface intf = en.nextElement();
+            String name = intf.getName();
+            if (!name.contains("docker") && !name.contains("lo")) {
+                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                    //获得IP
+                    InetAddress inetAddress = enumIpAddr.nextElement();
+                    if (!inetAddress.isLoopbackAddress()) {
+                        String ipaddress = inetAddress.getHostAddress().toString();
+                        if (!ipaddress.contains("::") && !ipaddress.contains("0:0:") && !ipaddress.contains("fe80")) {
+
+                            System.out.println(ipaddress);
+                            if(!"127.0.0.1".equals(ip)){
+                                ip = ipaddress;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return ip;
+    }
+
 
     /**
      * MD5加密一个文件名
@@ -305,25 +365,37 @@ public class PersonServiceImpl implements PersonService {
                 FindFaceParam findFaceParam = getStaticFindFaceParam();
                 findFaceParam.setPhotoUrl(photoPath);
                 findFaceParam.setMeta(personName);
-                FacePojo facePojo = findFaceService.addFace(null,findFaceParam);
-                if(facePojo != null){
-                    PersonVO personVO = new PersonVO();
-                    personVO.setGroupId(Integer.parseInt(personGroupId));
-                    personVO.setGroupName(personGroupName);
-                    personVO.setName(personName);
-                    personVO.setRemarks("批量录入");
-                    personVO.setIdNumber(KeyUtil.generate());
-                    TbPerson person = parsePersonVo(personVO, facePojo);
-                    if (!addMySqlFace(person)) {
-                        return ServerResponse.createBySuccess("批量上传照片发生错误", person);
+                try{
+                    FacePojo facePojo = findFaceService.addFace(null,findFaceParam);
+                    if(facePojo != null){
+                        PersonForm personForm = new PersonForm();
+                        personForm.setGroupId(Integer.parseInt(personGroupId));
+                        personForm.setGroupName(personGroupName);
+                        personForm.setName(personName);
+                        personForm.setRemarks("批量录入");
+                        personForm.setIdNumber(KeyUtil.generate());
+                        TbPerson person = parsePersonDTO(personForm, facePojo);
+                        if (!addMySqlFace(person)) {
+                            return ServerResponse.createBySuccess("批量上传照片发生错误", person);
+                        }
+                    }else {
+                        //待优化
+                        if(i == photoPathList.size()-1){
+                            msg += personName;
+                        }else {
+                            msg += personName+",";
+                        }
                     }
-                }else {
+                }catch (Exception e){
+                    e.printStackTrace();
                     if(i == photoPathList.size()-1){
                         msg += personName;
                     }else {
                         msg += personName+",";
                     }
+                    continue;
                 }
+
             }
         }
         if(!StringUtils.isEmpty(msg)){
@@ -333,22 +405,22 @@ public class PersonServiceImpl implements PersonService {
     }
 
     /**
-     * 把personVO和facePojo里的字段填充到TbPerson
-     * @param personVO
+     * 把personDTO和facePojo里的字段填充到TbPerson
+     * @param personForm
      * @param facePojo
      * @return
      */
-    public TbPerson parsePersonVo(PersonVO personVO, FacePojo facePojo) {
+    public TbPerson parsePersonDTO(PersonForm personForm, FacePojo facePojo) {
         TbPerson person = new TbPerson();
-        if(personVO.getId() != null){
-            person.setId(personVO.getId());
+        if(personForm.getId() != null){
+            person.setId(personForm.getId());
         }
-        person.setName(personVO.getName());
-        person.setGender(personVO.getGender());
-        person.setIdNumber(personVO.getIdNumber());
-        person.setGroupName(personVO.getGroupName());
-        person.setGroupId(personVO.getGroupId());
-        person.setRemarks(personVO.getRemarks());
+        person.setName(personForm.getName());
+        person.setGender(personForm.getGender());
+        person.setIdNumber(personForm.getIdNumber());
+        person.setGroupName(personForm.getGroupName());
+        person.setGroupId(personForm.getGroupId());
+        person.setRemarks(personForm.getRemarks());
         Timestamp timestamp = new Timestamp(new Date().getTime());
         person.setEnrollTime(timestamp);
         if (facePojo != null) {

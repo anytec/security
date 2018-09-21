@@ -13,7 +13,6 @@
     <result column="photo" property="photo" jdbcType="VARCHAR" />
     <result column="remarks" property="remarks" jdbcType="VARCHAR" />
     <result column="group_id" property="groupId" jdbcType="INTEGER" />
-    <result column="group_name" property="groupName" jdbcType="VARCHAR" />
   </resultMap>
   <sql id="Example_Where_Clause" >
     <where >
@@ -75,7 +74,7 @@
   </sql>
   <sql id="Base_Column_List" >
     id, name, id_number, sdk_id, gender, enroll_time, normalized, thumbnail, photo, remarks, 
-    group_id, group_name
+    group_id
   </sql>
   <select id="selectByExample" resultMap="BaseResultMap" parameterType="cn.anytec.security.model.TbPersonExample" >
     select
@@ -111,12 +110,12 @@
     insert into tb_person (id, name, id_number, 
       sdk_id, gender, enroll_time, 
       normalized, thumbnail, photo, 
-      remarks, group_id, group_name
+      remarks, group_id
       )
     values (#{id,jdbcType=INTEGER}, #{name,jdbcType=VARCHAR}, #{idNumber,jdbcType=VARCHAR}, 
       #{sdkId,jdbcType=VARCHAR}, #{gender,jdbcType=VARCHAR}, #{enrollTime,jdbcType=TIMESTAMP}, 
       #{normalized,jdbcType=VARCHAR}, #{thumbnail,jdbcType=VARCHAR}, #{photo,jdbcType=VARCHAR}, 
-      #{remarks,jdbcType=VARCHAR}, #{groupId,jdbcType=INTEGER}, #{groupName,jdbcType=VARCHAR}
+      #{remarks,jdbcType=VARCHAR}, #{groupId,jdbcType=INTEGER}
       )
   </insert>
   <insert id="insertSelective" parameterType="cn.anytec.security.model.TbPerson" >
@@ -155,9 +154,6 @@
       <if test="groupId != null" >
         group_id,
       </if>
-      <if test="groupName != null" >
-        group_name,
-      </if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides="," >
       <if test="id != null" >
@@ -192,9 +188,6 @@
       </if>
       <if test="groupId != null" >
         #{groupId,jdbcType=INTEGER},
-      </if>
-      <if test="groupName != null" >
-        #{groupName,jdbcType=VARCHAR},
       </if>
     </trim>
   </insert>
@@ -240,9 +233,6 @@
       <if test="record.groupId != null" >
         group_id = #{record.groupId,jdbcType=INTEGER},
       </if>
-      <if test="record.groupName != null" >
-        group_name = #{record.groupName,jdbcType=VARCHAR},
-      </if>
     </set>
     <if test="_parameter != null" >
       <include refid="Update_By_Example_Where_Clause" />
@@ -261,7 +251,6 @@
       photo = #{record.photo,jdbcType=VARCHAR},
       remarks = #{record.remarks,jdbcType=VARCHAR},
       group_id = #{record.groupId,jdbcType=INTEGER},
-      group_name = #{record.groupName,jdbcType=VARCHAR}
     <if test="_parameter != null" >
       <include refid="Update_By_Example_Where_Clause" />
     </if>
@@ -299,9 +288,6 @@
       <if test="groupId != null" >
         group_id = #{groupId,jdbcType=INTEGER},
       </if>
-      <if test="groupName != null" >
-        group_name = #{groupName,jdbcType=VARCHAR},
-      </if>
     </set>
     where id = #{id,jdbcType=INTEGER}
   </update>
@@ -316,8 +302,7 @@
       thumbnail = #{thumbnail,jdbcType=VARCHAR},
       photo = #{photo,jdbcType=VARCHAR},
       remarks = #{remarks,jdbcType=VARCHAR},
-      group_id = #{groupId,jdbcType=INTEGER},
-      group_name = #{groupName,jdbcType=VARCHAR}
+      group_id = #{groupId,jdbcType=INTEGER}
     where id = #{id,jdbcType=INTEGER}
   </update>
 </mapper>

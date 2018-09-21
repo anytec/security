@@ -1,8 +1,8 @@
 package cn.anytec.security.service.impl;
 
 import cn.anytec.security.dao.OperationLogMapper;
-import cn.anytec.security.model.vo.OperationLogVO;
-import cn.anytec.security.model.vo.OperationRecordVO;
+import cn.anytec.security.model.dto.OperationLogDTO;
+import cn.anytec.security.model.dto.OperationRecordDTO;
 import cn.anytec.security.service.OperationLogService;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -21,21 +21,21 @@ public class OperationLogServiceImpl implements OperationLogService {
     private OperationLogMapper mapper;
 
     @Override
-    public PageInfo<OperationLogVO> list(Integer pageNum, Integer pageSize, String firstTime, String lastTime, String logType) {
+    public PageInfo<OperationLogDTO> list(Integer pageNum, Integer pageSize, String firstTime, String lastTime, String logType) {
 
         PageHelper.startPage(pageNum, pageSize);
 
-        List<OperationLogVO> logs = mapper.list(firstTime, lastTime, logType);
+        List<OperationLogDTO> logs = mapper.list(firstTime, lastTime, logType);
 
         return PageInfo.of(logs);
     }
 
     @Override
-    public PageInfo<OperationRecordVO> operationRecordList(Integer pageNum, Integer pageSize, String firstTime, String lastTime, String operationType, String uname) {
+    public PageInfo<OperationRecordDTO> operationRecordList(Integer pageNum, Integer pageSize, String firstTime, String lastTime, String operationType, String uname) {
 
         PageHelper.startPage(pageNum, pageSize);
 
-        List<OperationRecordVO> logs = mapper.operationRecordList(firstTime, lastTime, operationType, uname);
+        List<OperationRecordDTO> logs = mapper.operationRecordList(firstTime, lastTime, operationType, uname);
 
         return PageInfo.of(logs);
     }

@@ -5,12 +5,14 @@ import cn.anytec.security.config.GeneralConfig;
 import cn.anytec.security.findface.FindFaceService;
 import cn.anytec.security.findface.model.*;
 import cn.anytec.security.model.TbCamera;
+import cn.anytec.security.model.TbGroupCamera;
 import cn.anytec.security.model.TbGroupPerson;
 import cn.anytec.security.model.TbPerson;
 import cn.anytec.security.model.parammodel.FindFaceParam;
 import cn.anytec.security.model.parammodel.IdenfitySnapParam;
 import cn.anytec.security.component.mongo.MongoDBService;
 import cn.anytec.security.service.CameraService;
+import cn.anytec.security.service.GroupCameraService;
 import cn.anytec.security.service.GroupPersonService;
 import cn.anytec.security.service.PersonService;
 import cn.anytec.security.model.websocketmodel.FdSnapShot;
@@ -27,10 +29,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
-
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -54,6 +53,8 @@ public class FRDataHandler {
     @Autowired
     private CameraService cameraService;
     @Autowired
+    private GroupCameraService groupCameraService;
+    @Autowired
     private WSSendHandler wsSendHandler;
     @Autowired
     private RedisTemplate redisTemplate;
@@ -67,13 +68,17 @@ public class FRDataHandler {
         List<IdentifyFace> faceList = addFace(photo,cameraSdkId,bbox);
         if (!CollectionUtils.isEmpty(faceList)) {
             TbCamera camera = cameraService.getCameraBySdkId(cameraSdkId);
-            faceList.forEach(face -> {
-                handleSnapshot(face, timeModel, camera);
-                IdentifyPojo identifyPojo = identifyInStaticGallery(face.getThumbnail());
-                if (identifyPojo != null) {
-                    handleWarningSnap(identifyPojo,face, timeModel, camera);
-                }
-            });
+            if(camera != null){
+                faceList.forEach(face -> {
+                    handleSnapshot(face, timeModel, camera);
+                    IdentifyPojo identifyPojo = identifyInStaticGallery(face.getThumbnail());
+                    if (identifyPojo != null) {
+                        handleWarningSnap(identifyPojo,face, timeModel, camera);
+                    }
+                });
+            }else {
+                logger.info("【获取camera失败】cameraSdkId:{}",cameraSdkId);
+            }
         }
     }
 
@@ -146,21 +151,11 @@ public class FRDataHandler {
         //深圳坐标,目前用于在线
         /*locationList.add("114.056215,22.539968");
         locationList.add("114.062931,22.542524");
-        locationList.add("114.062524,22.540166");
-        locationList.add("114.052996,22.536698");
-        locationList.add("114.068124,22.544685");
-        locationList.add("114.044585,22.546607");
-        locationList.add("114.044714,22.539631");
-        locationList.add("114.049005,22.554653");
-        locationList.add("114.045229,22.512397");
-        locationList.add("114.067459,22.510019");
-        locationList.add("114.086513,22.534993");
         locationList.add("114.050121,22.524132");
         locationList.add("114.104366,22.546171");*/
         //北京坐标,目前用于离线
       /*  locationList.add("39.907001,116.391378");
         locationList.add("39.900153,116.397901");
-        locationList.add("39.907857,116.401076");
         locationList.add("39.901733,116.40554");
         locationList.add("39.902326,116.420045");*/
         Integer i = new Random().nextInt(locationList.size());
@@ -236,13 +231,14 @@ public class FRDataHandler {
     }
 
     public void insertCameraData(FrWarning warning, TbCamera camera) {
-        if (camera == null)
-            return;
         warning.setCameraId(camera.getId());
         warning.setCameraGroupId(camera.getGroupId());
         warning.setCameraSdkId(camera.getSdkId());
         warning.setCameraName(camera.getName());
-        warning.setCameraGroupName(camera.getGroupName());
+        TbGroupCamera cameraGroup = groupCameraService.getGroupCameraById(camera.getId().toString());
+        if(cameraGroup != null){
+            warning.setCameraGroupName(cameraGroup.getName());
+        }
     }
 
     public void insertPersonData(FrWarning warning, MatchFace face) {

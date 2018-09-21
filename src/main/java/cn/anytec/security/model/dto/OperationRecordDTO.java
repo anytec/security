@@ -1,4 +1,4 @@
-package cn.anytec.security.model.vo;
+package cn.anytec.security.model.dto;
 
 import java.util.Date;
 
@@ -6,7 +6,7 @@ import java.util.Date;
  * Created by imyzt on 2018/8/23 19:04
  * ????-?????VO??
  */
-public class OperationRecordVO {
+public class OperationRecordDTO {
 
     private String uname;
 
@@ -70,7 +70,7 @@ public class OperationRecordVO {
 
     @Override
     public String toString() {
-        return "OperationRecordVO{" +
+        return "OperationRecordDTO{" +
                 "uname='" + uname + '\'' +
                 ", operationType='" + operationType.substring(0, 2) + '\'' +
                 ", operationObj='" + operationObj + '\'' +
