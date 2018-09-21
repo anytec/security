@@ -1,11 +1,10 @@
 package cn.anytec.security.controller;
 
 import cn.anytec.security.common.ServerResponse;
-import cn.anytec.security.core.annotion.OperLog;
 import cn.anytec.security.core.annotion.Permission;
 import cn.anytec.security.core.enums.PermissionType;
-import cn.anytec.security.model.vo.OperationLogVO;
-import cn.anytec.security.model.vo.OperationRecordVO;
+import cn.anytec.security.model.dto.OperationLogDTO;
+import cn.anytec.security.model.dto.OperationRecordDTO;
 import cn.anytec.security.service.OperationLogService;
 import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +28,7 @@ public class OperationLogController {
                                @RequestParam(required = false) String firstTime, @RequestParam(required = false) String lastTime,
                                @RequestParam(required = false) String logType) {
 
-        PageInfo<OperationLogVO> logs = logService.list(pageNum, pageSize, firstTime, lastTime, logType);
+        PageInfo<OperationLogDTO> logs = logService.list(pageNum, pageSize, firstTime, lastTime, logType);
 
         return ServerResponse.createBySuccess(logs);
     }
@@ -42,7 +41,7 @@ public class OperationLogController {
                                @RequestParam(required = false) String firstTime, @RequestParam(required = false) String lastTime,
                                @RequestParam(required = false) String operationType, @RequestParam(required = false) String uname) {
 
-        PageInfo<OperationRecordVO> operationRecordList = logService.operationRecordList(pageNum, pageSize, firstTime, lastTime, operationType, uname);
+        PageInfo<OperationRecordDTO> operationRecordList = logService.operationRecordList(pageNum, pageSize, firstTime, lastTime, operationType, uname);
 
         return ServerResponse.createBySuccess(operationRecordList);
     }

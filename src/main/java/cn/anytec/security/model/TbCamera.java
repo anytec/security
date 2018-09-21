@@ -21,8 +21,6 @@ public class TbCamera {
 
     private String location;
 
-    private String groupName;
-
     private String remarks = "";
 
     public Integer getId() {
@@ -103,14 +101,6 @@ public class TbCamera {
 
     public void setLocation(String location) {
         this.location = location == null ? null : location.trim();
-    }
-
-    public String getGroupName() {
-        return groupName;
-    }
-
-    public void setGroupName(String groupName) {
-        this.groupName = groupName == null ? null : groupName.trim();
     }
 
     public String getRemarks() {

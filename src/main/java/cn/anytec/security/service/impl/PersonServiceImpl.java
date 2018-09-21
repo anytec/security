@@ -11,11 +11,11 @@ import cn.anytec.security.findface.model.IdentifyFace;
 import cn.anytec.security.model.TbGroupPerson;
 import cn.anytec.security.model.TbPerson;
 import cn.anytec.security.model.TbPersonExample;
+import cn.anytec.security.model.form.PersonForm;
 import cn.anytec.security.model.parammodel.FindFaceParam;
-import cn.anytec.security.model.vo.PersonVO;
+import cn.anytec.security.model.dto.PersonDTO;
 import cn.anytec.security.service.GroupPersonService;
 import cn.anytec.security.service.PersonService;
-import cn.anytec.security.model.dto.PersonDTO;
 import cn.anytec.security.util.KeyUtil;
 import cn.anytec.security.util.MD5Util;
 import com.alibaba.fastjson.JSONObject;
@@ -78,12 +78,12 @@ public class PersonServiceImpl implements PersonService {
         return false;
     }
 
-    public ServerResponse<TbPerson> add(PersonDTO personDTO) {
-        MultipartFile photo = personDTO.getPhoto();
-        String photoUrl = personDTO.getPhotoUrl();
+    public ServerResponse<TbPerson> add(PersonForm personForm) {
+        MultipartFile photo = personForm.getPhoto();
+        String photoUrl = personForm.getPhotoUrl();
         FindFaceParam param = getStaticFindFaceParam();
         param.setPhotoUrl(photoUrl);
-        param.setMeta(personDTO.getName());
+        param.setMeta(personForm.getName());
         FacePojo facePojo = null;
         try {
             facePojo = addStaticSdkFace(photo,param);
@@ -91,7 +91,7 @@ public class PersonServiceImpl implements PersonService {
             e.printStackTrace();
         }
         if(facePojo != null){
-            TbPerson person = parsePersonDTO(personDTO, facePojo);
+            TbPerson person = parsePersonDTO(personForm, facePojo);
             if (addMySqlFace(person)) {
                 return ServerResponse.createBySuccess("添加person成功", person);
             }
@@ -160,22 +160,22 @@ public class PersonServiceImpl implements PersonService {
         return findFaceService.deleteFace(sdkId);
     }
 
-    public ServerResponse<TbPerson> update(PersonDTO personDTO) {
-        MultipartFile photo = personDTO.getPhoto();
+    public ServerResponse<TbPerson> update(PersonForm personForm) {
+        MultipartFile photo = personForm.getPhoto();
         FacePojo facePojo = null;
         if (photo != null) {
-            String sdkId = personDTO.getSdkId();
+            String sdkId = personForm.getSdkId();
             if (deleteSdkFace(sdkId)) {
                 try{
                     FindFaceParam param = getStaticFindFaceParam();
-                    param.setMeta(personDTO.getName());
+                    param.setMeta(personForm.getName());
                     facePojo = addStaticSdkFace(photo,param);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }
-        TbPerson person = parsePersonDTO(personDTO, facePojo);
+        TbPerson person = parsePersonDTO(personForm, facePojo);
         if(updateMysqlFace(person)){
             TbPerson tbPerson = personMapper.selectByPrimaryKey(person.getId());
             removeRedisPerson(tbPerson);
@@ -243,20 +243,20 @@ public class PersonServiceImpl implements PersonService {
         example.setOrderByClause("enroll_time desc");
         List<TbPerson> personList = personMapper.selectByExample(example);
         PageInfo pageResult = new PageInfo(personList);
-        List<PersonVO> personVOList = personList.stream()
-                .map(e->personConvertPersonVO(e))
+        List<PersonDTO> personDTOList = personList.stream()
+                .map(e->personConvertPersonDTO(e))
                 .collect(Collectors.toList());
-        pageResult.setList(personVOList);
+        pageResult.setList(personDTOList);
         return ServerResponse.createBySuccess(pageResult);
     }
 
     @Override
-    public PersonVO personConvertPersonVO(TbPerson person) {
-        PersonVO personVO = new PersonVO();
-        BeanUtils.copyProperties(person, personVO);
+    public PersonDTO personConvertPersonDTO(TbPerson person) {
+        PersonDTO personDTO = new PersonDTO();
+        BeanUtils.copyProperties(person, personDTO);
         TbGroupPerson personGroup = groupPersonService.getGroupPersonById(person.getGroupId().toString()).getData();
-        personVO.setGroupName(personGroup.getName());
-        return personVO;
+        personDTO.setGroupName(personGroup.getName());
+        return personDTO;
     }
 
     /**
@@ -368,13 +368,13 @@ public class PersonServiceImpl implements PersonService {
                 try{
                     FacePojo facePojo = findFaceService.addFace(null,findFaceParam);
                     if(facePojo != null){
-                        PersonDTO personDTO = new PersonDTO();
-                        personDTO.setGroupId(Integer.parseInt(personGroupId));
-                        personDTO.setGroupName(personGroupName);
-                        personDTO.setName(personName);
-                        personDTO.setRemarks("批量录入");
-                        personDTO.setIdNumber(KeyUtil.generate());
-                        TbPerson person = parsePersonDTO(personDTO, facePojo);
+                        PersonForm personForm = new PersonForm();
+                        personForm.setGroupId(Integer.parseInt(personGroupId));
+                        personForm.setGroupName(personGroupName);
+                        personForm.setName(personName);
+                        personForm.setRemarks("批量录入");
+                        personForm.setIdNumber(KeyUtil.generate());
+                        TbPerson person = parsePersonDTO(personForm, facePojo);
                         if (!addMySqlFace(person)) {
                             return ServerResponse.createBySuccess("批量上传照片发生错误", person);
                         }
@@ -406,21 +406,21 @@ public class PersonServiceImpl implements PersonService {
 
     /**
      * 把personDTO和facePojo里的字段填充到TbPerson
-     * @param personDTO
+     * @param personForm
      * @param facePojo
      * @return
      */
-    public TbPerson parsePersonDTO(PersonDTO personDTO, FacePojo facePojo) {
+    public TbPerson parsePersonDTO(PersonForm personForm, FacePojo facePojo) {
         TbPerson person = new TbPerson();
-        if(personDTO.getId() != null){
-            person.setId(personDTO.getId());
+        if(personForm.getId() != null){
+            person.setId(personForm.getId());
         }
-        person.setName(personDTO.getName());
-        person.setGender(personDTO.getGender());
-        person.setIdNumber(personDTO.getIdNumber());
-        person.setGroupName(personDTO.getGroupName());
-        person.setGroupId(personDTO.getGroupId());
-        person.setRemarks(personDTO.getRemarks());
+        person.setName(personForm.getName());
+        person.setGender(personForm.getGender());
+        person.setIdNumber(personForm.getIdNumber());
+        person.setGroupName(personForm.getGroupName());
+        person.setGroupId(personForm.getGroupId());
+        person.setRemarks(personForm.getRemarks());
         Timestamp timestamp = new Timestamp(new Date().getTime());
         person.setEnrollTime(timestamp);
         if (facePojo != null) {

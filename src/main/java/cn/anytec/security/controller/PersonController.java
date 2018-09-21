@@ -6,7 +6,7 @@ import cn.anytec.security.core.annotion.Permission;
 import cn.anytec.security.core.enums.PermissionType;
 import cn.anytec.security.model.TbPerson;
 import cn.anytec.security.service.PersonService;
-import cn.anytec.security.model.dto.PersonDTO;
+import cn.anytec.security.model.form.PersonForm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,16 +30,16 @@ public class PersonController {
     @RequestMapping("/add")
     @ResponseBody
     @Permission(value = "添加底库人员", method = PermissionType.IS_ADMIN)
-    public ServerResponse add(@Valid PersonDTO personDTO, BindingResult bindingResult){
+    public ServerResponse add(@Valid PersonForm personForm, BindingResult bindingResult){
         if (bindingResult.hasErrors()) {
             logger.error("【添加底库人员】 添加底库人员， 原因：" + bindingResult.getFieldError().getDefaultMessage());
             return ServerResponse.createByErrorMessage(bindingResult.getFieldError().getDefaultMessage());
         }
-        String idNumber = personDTO.getIdNumber();
+        String idNumber = personForm.getIdNumber();
         if(!personService.checkIdNumber(idNumber)){
             return ServerResponse.createByErrorMessage("标志编码: "+idNumber+" 已存在！");
         }
-        return personService.add(personDTO);
+        return personService.add(personForm);
     }
 
     @OperLog(value = "删除底库人员", key = "personSdkIds")
@@ -72,11 +72,11 @@ public class PersonController {
     @RequestMapping("/update")
     @ResponseBody
     @Permission(value = "修改底库人员", method = PermissionType.IS_ADMIN)
-    public ServerResponse update(@Valid PersonDTO personDTO, BindingResult bindingResult){
+    public ServerResponse update(@Valid PersonForm personForm, BindingResult bindingResult){
         if (bindingResult.hasErrors()) {
             logger.error("【添加底库人员】 添加底库人员， 原因：" + bindingResult.getFieldError().getDefaultMessage());
             return ServerResponse.createByErrorMessage(bindingResult.getFieldError().getDefaultMessage());
         }
-        return personService.update(personDTO);
+        return personService.update(personForm);
     }
 }

@@ -1,8 +1,8 @@
 package cn.anytec.security.dao;
 
 import cn.anytec.security.model.OperationLog;
-import cn.anytec.security.model.vo.OperationLogVO;
-import cn.anytec.security.model.vo.OperationRecordVO;
+import cn.anytec.security.model.dto.OperationLogDTO;
+import cn.anytec.security.model.dto.OperationRecordDTO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -16,9 +16,9 @@ public interface OperationLogMapper {
 
     int insertLog(@Param("log") OperationLog log);
 
-    List<OperationLogVO> list(@Param("firstTime") String firstTime, @Param("lastTime") String lastTime,
-                              @Param("logType") String logType);
+    List<OperationLogDTO> list(@Param("firstTime") String firstTime, @Param("lastTime") String lastTime,
+                               @Param("logType") String logType);
 
-    List<OperationRecordVO> operationRecordList(@Param("firstTime") String firstTime, @Param("lastTime") String lastTime,
-                                                @Param("operationType") String operationType, @Param("uname") String uname);
+    List<OperationRecordDTO> operationRecordList(@Param("firstTime") String firstTime, @Param("lastTime") String lastTime,
+                                                 @Param("operationType") String operationType, @Param("uname") String uname);
 }

@@ -6,7 +6,7 @@ import cn.anytec.security.core.annotion.OperLog;
 import cn.anytec.security.core.annotion.Permission;
 import cn.anytec.security.core.enums.PermissionType;
 import cn.anytec.security.model.TbCamera;
-import cn.anytec.security.model.vo.CameraVO;
+import cn.anytec.security.model.dto.CameraDTO;
 import cn.anytec.security.service.CameraService;
 import com.github.pagehelper.PageInfo;
 import org.apache.commons.lang3.StringUtils;
@@ -65,10 +65,10 @@ public class CameraController {
 
         List<TbCamera> cameraList = cameraService.list(pageNum,pageSize,name,groupId,type,serverLabel,status,cameraSdkId);
         PageInfo pageResult = new PageInfo(cameraList);
-        List<CameraVO> cameraVOList = cameraList.stream()
-                .map(e->cameraService.cameraConvertCameraVO(e))
+        List<CameraDTO> cameraDTOList = cameraList.stream()
+                .map(e->cameraService.cameraConvertToCameraDTO(e))
                 .collect(Collectors.toList());
-        pageResult.setList(cameraVOList);
+        pageResult.setList(cameraDTOList);
         return ServerResponse.createBySuccess(pageResult);
     }
 

@@ -5,15 +5,12 @@ import cn.anytec.security.core.annotion.OperLog;
 import cn.anytec.security.core.annotion.Permission;
 import cn.anytec.security.core.enums.PermissionType;
 import cn.anytec.security.model.TbGroupCamera;
-import cn.anytec.security.model.vo.CameraVO;
 import cn.anytec.security.service.GroupCameraService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import java.util.List;
-import java.util.Map;
 
 @Controller
 @RequestMapping("/groupCamera")
@@ -61,7 +58,7 @@ public class GroupCameraController {
 
     @RequestMapping("/getAllCameras")
     @ResponseBody
-    public ServerResponse<Map<String,List<CameraVO>>> getAllCameras(@RequestParam(value = "status",required = false)String status){
+    public ServerResponse getAllCameras(@RequestParam(value = "status",required = false)String status){
         return groupCameraService.getAllCameras(status);
     }
 }

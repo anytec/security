@@ -1,10 +1,10 @@
-package cn.anytec.security.model.vo;
+package cn.anytec.security.model.dto;
 
 /**
  * Created by imyzt on 2018/8/22 17:20
  * 用户登录成功后返回对象
  */
-public class UserVO {
+public class UserDTO {
 
     private Integer id;
 

@@ -11,7 +11,7 @@ import cn.anytec.security.core.util.Contrast;
 import cn.anytec.security.dao.TbUserMapper;
 import cn.anytec.security.model.TbUser;
 import cn.anytec.security.model.TbUserExample;
-import cn.anytec.security.model.vo.UserVO;
+import cn.anytec.security.model.dto.UserDTO;
 import cn.anytec.security.service.UserService;
 import cn.anytec.security.util.MD5Util;
 import com.github.pagehelper.PageHelper;
@@ -36,7 +36,7 @@ public class UserServiceImpl implements UserService {
     private GeneralConfig config;
 
     @Override
-    public ServerResponse<UserVO> login(String account, String upass, HttpSession session) {
+    public ServerResponse<UserDTO> login(String account, String upass, HttpSession session) {
 
         // 构造查询
         TbUserExample userExample = new TbUserExample();
@@ -59,11 +59,11 @@ public class UserServiceImpl implements UserService {
 
         // 登录成功后系统处理
         session.setAttribute("currentUser",currentUser);
-        UserVO userVO = new UserVO();
-        BeanUtils.copyProperties(currentUser, userVO, "role");
-        userVO.setRole(Contrast.parseRole(currentUser.getRole()));
+        UserDTO userDTO = new UserDTO();
+        BeanUtils.copyProperties(currentUser, userDTO, "role");
+        userDTO.setRole(Contrast.parseRole(currentUser.getRole()));
 
-        return ServerResponse.createBySuccess("登录成功", userVO);
+        return ServerResponse.createBySuccess("登录成功", userDTO);
     }
 
     public ServerResponse register(TbUser user) {
@@ -94,16 +94,16 @@ public class UserServiceImpl implements UserService {
         List<TbUser> userList = userMapper.selectByExample(example);
 
         // 数据组装
-        ArrayList<UserVO> userVOList = new ArrayList<>();
+        ArrayList<UserDTO> userDTOList = new ArrayList<>();
         if (null != userList && userList.size() > 0) {
             userList.forEach(tbUser -> {
-                UserVO userVO = new UserVO();
-                BeanUtils.copyProperties(tbUser, userVO, "role");
-                userVO.setRole(Contrast.parseRole(tbUser.getRole()));
-                userVOList.add(userVO);
+                UserDTO userDTO = new UserDTO();
+                BeanUtils.copyProperties(tbUser, userDTO, "role");
+                userDTO.setRole(Contrast.parseRole(tbUser.getRole()));
+                userDTOList.add(userDTO);
             });
         }
-        return ServerResponse.createBySuccess(PageInfo.of(userVOList));
+        return ServerResponse.createBySuccess(PageInfo.of(userDTOList));
     }
 
     public ServerResponse<String> checkaccount(String account) {
@@ -165,17 +165,17 @@ public class UserServiceImpl implements UserService {
         return ServerResponse.createByErrorMessage("更新个人信息失败");
     }
 
-    public ServerResponse<UserVO> getInformation(Integer userId) {
+    public ServerResponse<UserDTO> getInformation(Integer userId) {
         TbUser user = userMapper.selectByPrimaryKey(userId);
         if (user == null) {
             return ServerResponse.createByErrorMessage("找不到当前用户");
         }
 
-        UserVO userVO = new UserVO();
-        BeanUtils.copyProperties(user, userVO, "role","upass");
-        userVO.setRole(Contrast.parseRole(user.getRole()));
+        UserDTO userDTO = new UserDTO();
+        BeanUtils.copyProperties(user, userDTO, "role","upass");
+        userDTO.setRole(Contrast.parseRole(user.getRole()));
         LogObjectHolder.me().set(user);
-        return ServerResponse.createBySuccess(userVO);
+        return ServerResponse.createBySuccess(userDTO);
     }
 
     public ServerResponse checkAdminRole(TbUser user) {

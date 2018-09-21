@@ -1,4 +1,4 @@
-package cn.anytec.security.model.vo;
+package cn.anytec.security.model.dto;
 
 import org.springframework.data.annotation.Id;
 
@@ -8,7 +8,7 @@ import java.util.Date;
  * Created by imyzt on 2018-8-16 15:12
  * 日志信息VO对象
  */
-public class OperationLogVO {
+public class OperationLogDTO {
 
     /**
      * 主键
@@ -44,7 +44,7 @@ public class OperationLogVO {
      */
     private String message;
 
-    public OperationLogVO() {
+    public OperationLogDTO() {
     }
 
     public Integer getId() {
@@ -113,7 +113,7 @@ public class OperationLogVO {
 
     @Override
     public String toString() {
-        return "OperationLogVO{" +
+        return "OperationLogDTO{" +
                 "id=" + id +
                 ", logtype='" + logtype + '\'' +
                 ", logname='" + logname + '\'' +

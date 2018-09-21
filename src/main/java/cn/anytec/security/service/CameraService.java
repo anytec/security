@@ -2,8 +2,7 @@ package cn.anytec.security.service;
 
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.model.TbCamera;
-import cn.anytec.security.model.vo.CameraVO;
-import com.github.pagehelper.PageInfo;
+import cn.anytec.security.model.dto.CameraDTO;
 
 import java.util.List;
 
@@ -20,10 +19,13 @@ public interface CameraService {
     /**删除camera*/
     ServerResponse<String> delete(String cameraSdkIds);
 
+    //删除mysql里的camera
+    void deleteMysqlCamera(String cameraSdkId);
+
     /**查询camera列表*/
     List<TbCamera> list(int pageNum, int pageSize, String name, Integer groupId, String type, String serverLabel, Integer status, String cameraSdkId);
 
-    CameraVO cameraConvertCameraVO(TbCamera camera);
+    CameraDTO cameraConvertToCameraDTO(TbCamera camera);
 
     /**更新camera*/
     ServerResponse update(TbCamera camera);

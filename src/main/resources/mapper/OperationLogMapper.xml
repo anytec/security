@@ -27,7 +27,7 @@
             )
     </insert>
 
-    <select id="list" resultType="cn.anytec.security.model.vo.OperationLogVO">
+    <select id="list" resultType="cn.anytec.security.model.dto.OperationLogDTO">
         SELECT
         <include refid="list_sql"/>
         FROM
@@ -49,7 +49,7 @@
         </if>
     </select>
 
-    <select id="operationRecordList" resultType="cn.anytec.security.model.vo.OperationRecordVO">
+    <select id="operationRecordList" resultType="cn.anytec.security.model.dto.OperationRecordDTO">
         SELECT
         <include refid="operationRecordList_sql"/>
         FROM

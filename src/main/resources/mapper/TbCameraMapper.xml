@@ -12,7 +12,6 @@
     <result column="name" property="name" jdbcType="VARCHAR" />
     <result column="group_id" property="groupId" jdbcType="INTEGER" />
     <result column="location" property="location" jdbcType="VARCHAR" />
-    <result column="group_name" property="groupName" jdbcType="VARCHAR" />
     <result column="remarks" property="remarks" jdbcType="VARCHAR" />
   </resultMap>
   <resultMap id="serverLabelList" type="java.util.HashMap">
@@ -78,7 +77,7 @@
   </sql>
   <sql id="Base_Column_List" >
     id, sdk_id, stream_address, play_address, camera_status, camera_type, server_label, 
-    name, group_id, location, group_name, remarks
+    name, group_id, location, remarks
   </sql>
   <select id="selectServerLabel" resultMap="serverLabelList">
     select distinct server_label from tb_camera
@@ -117,12 +116,12 @@
     insert into tb_camera (id, sdk_id, stream_address, 
       play_address, camera_status, camera_type, 
       server_label, name, group_id, 
-      location, group_name, remarks
+      location, remarks
       )
     values (#{id,jdbcType=INTEGER}, #{sdkId,jdbcType=VARCHAR}, #{streamAddress,jdbcType=VARCHAR}, 
       #{playAddress,jdbcType=VARCHAR}, #{cameraStatus,jdbcType=INTEGER}, #{cameraType,jdbcType=VARCHAR}, 
       #{serverLabel,jdbcType=VARCHAR}, #{name,jdbcType=VARCHAR}, #{groupId,jdbcType=INTEGER}, 
-      #{location,jdbcType=VARCHAR}, #{groupName,jdbcType=VARCHAR}, #{remarks,jdbcType=VARCHAR}
+      #{location,jdbcType=VARCHAR}, #{remarks,jdbcType=VARCHAR}
       )
   </insert>
   <insert id="insertSelective" parameterType="cn.anytec.security.model.TbCamera" >
@@ -158,9 +157,6 @@
       <if test="location != null" >
         location,
       </if>
-      <if test="groupName != null" >
-        group_name,
-      </if>
       <if test="remarks != null" >
         remarks,
       </if>
@@ -195,9 +191,6 @@
       </if>
       <if test="location != null" >
         #{location,jdbcType=VARCHAR},
-      </if>
-      <if test="groupName != null" >
-        #{groupName,jdbcType=VARCHAR},
       </if>
       <if test="remarks != null" >
         #{remarks,jdbcType=VARCHAR},
@@ -243,9 +236,6 @@
       <if test="record.location != null" >
         location = #{record.location,jdbcType=VARCHAR},
       </if>
-      <if test="record.groupName != null" >
-        group_name = #{record.groupName,jdbcType=VARCHAR},
-      </if>
       <if test="record.remarks != null" >
         remarks = #{record.remarks,jdbcType=VARCHAR},
       </if>
@@ -266,7 +256,6 @@
       name = #{record.name,jdbcType=VARCHAR},
       group_id = #{record.groupId,jdbcType=INTEGER},
       location = #{record.location,jdbcType=VARCHAR},
-      group_name = #{record.groupName,jdbcType=VARCHAR},
       remarks = #{record.remarks,jdbcType=VARCHAR}
     <if test="_parameter != null" >
       <include refid="Update_By_Example_Where_Clause" />
@@ -302,9 +291,6 @@
       <if test="location != null" >
         location = #{location,jdbcType=VARCHAR},
       </if>
-      <if test="groupName != null" >
-        group_name = #{groupName,jdbcType=VARCHAR},
-      </if>
       <if test="remarks != null" >
         remarks = #{remarks,jdbcType=VARCHAR},
       </if>
@@ -322,7 +308,6 @@
       name = #{name,jdbcType=VARCHAR},
       group_id = #{groupId,jdbcType=INTEGER},
       location = #{location,jdbcType=VARCHAR},
-      group_name = #{groupName,jdbcType=VARCHAR},
       remarks = #{remarks,jdbcType=VARCHAR}
     where id = #{id,jdbcType=INTEGER}
   </update>

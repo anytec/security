@@ -2,14 +2,14 @@ package cn.anytec.security.service;
 
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.model.TbUser;
-import cn.anytec.security.model.vo.UserVO;
+import cn.anytec.security.model.dto.UserDTO;
 import com.github.pagehelper.PageInfo;
 
 import javax.servlet.http.HttpSession;
 
 public interface UserService {
 
-    ServerResponse<UserVO> login(String account, String upass, HttpSession session);
+    ServerResponse<UserDTO> login(String account, String upass, HttpSession session);
 
     ServerResponse register(TbUser user);
 
@@ -21,7 +21,7 @@ public interface UserService {
 
     ServerResponse update(TbUser user);
 
-    ServerResponse<UserVO> getInformation(Integer userId);
+    ServerResponse<UserDTO> getInformation(Integer userId);
 
     ServerResponse checkAdminRole(TbUser user);
 }

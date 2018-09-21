@@ -5,6 +5,7 @@ rebel.xml
 # 本地化配置文件
 src/main/resources/application.properties
 src/main/resources/application-zhao.yml
+src/main/resources/application-niu.yml
 
 #前台静态文件独立出来处理
 src/main/resources/static/**

@@ -37,29 +37,44 @@ public class IPCOperationsImpl implements IPCOperations {
     private RedisTemplate redisTemplate;
     @Autowired
     private RestTemplate restTemplate;
+    @Autowired
+    private CameraService cameraService;
+
     @Value("${redisKeys.captureCameras}")
     private String captureCameras;
     @Value("${redisKeys.captureCamerasInUse}")
     private String captureCamerasInUse;
 
+    /*@Scheduled(fixedDelay = 2000)
+    public void ping() {
+        Map<String,String> capCams = redisTemplate.opsForHash().entries(captureCameras);
+        capCams.forEach((macAddress,ipcAddress)->{
+            pingCaptureCameras(macAddress,ipcAddress);
+        });
 
- /*   @Scheduled(fixedDelay = 60000)
-    public void pingCaptureCameras() {
-        Map<String,String> result = redisTemplate.opsForHash().entries(captureCameras);
-        result.forEach((macAddress,ipcAddress)->{
-            String url = "http://"+ipcAddress+"/goform/ping";
-            if(!ipcHttpGet(url)){
-                redisTemplate.opsForValue().increment(macAddress,1);
-                if((long)redisTemplate.opsForValue().get(macAddress)>10){
-                    TbCamera camera = cameraService.getCameraBySdkId(macAddress);
-                    camera.setCameraStatus(0);
-                    cameraService.update(camera);
-                }
-            }else {
-                redisTemplate.opsForValue().set(macAddress,0);
-            }
+        Map<String,String> capCamsInUse = redisTemplate.opsForHash().entries(captureCamerasInUse);
+        capCamsInUse.forEach((macAddress,ipcAddress)->{
+            pingCaptureCameras(macAddress,ipcAddress);
         });
     }*/
+
+    private void pingCaptureCameras(String macAddress, String ipcAddress){
+        logger.debug("【pingCaptureCameras】{} , {}",macAddress,ipcAddress);
+        String url = "http://"+ipcAddress+"/goform/ping";
+        try{
+            ipcHttpGet(url);
+            redisTemplate.opsForValue().set(macAddress,"0");
+        }catch (Exception e) {
+            redisTemplate.opsForValue().increment(macAddress,1);
+            logger.debug("【ping off times】{} ",redisTemplate.opsForValue().get(macAddress));
+            if(Long.parseLong(redisTemplate.opsForValue().get(macAddress).toString())>5){
+                deleteFromCache(macAddress);
+                deleteFromInUseCache(macAddress);
+                cameraService.deleteMysqlCamera(macAddress);
+                logger.debug("【ping delete】");
+            }
+        }
+    }
 
     @Override
     public boolean addToCache(String macAddress, String ipAddress) {

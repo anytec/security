@@ -10,7 +10,7 @@ import cn.anytec.security.dao.TbCameraMapper;
 import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.model.TbCameraExample;
 import cn.anytec.security.model.TbGroupCamera;
-import cn.anytec.security.model.vo.CameraVO;
+import cn.anytec.security.model.dto.CameraDTO;
 import cn.anytec.security.service.CameraService;
 import cn.anytec.security.service.GroupCameraService;
 import com.alibaba.fastjson.JSONArray;
@@ -95,18 +95,27 @@ public class CameraServiceImpl implements CameraService {
                     }
                     if (camera.getCameraType().equals(CameraType.CaptureCamera.getMsg())) {
                         //删除redis里的抓拍机
-                        ipcOperations.invalidCaptureCamera(cameraSdkId);
+                        try {
+                            ipcOperations.invalidCaptureCamera(cameraSdkId);
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
                         ipcOperations.deleteFromInUseCache(cameraSdkId);
+                        ipcOperations.deleteFromCache(cameraSdkId);
                     }
-                    //删除mysql里的camera
-                    TbCameraExample example = new TbCameraExample();
-                    TbCameraExample.Criteria c = example.createCriteria();
-                    c.andSdkIdEqualTo(cameraSdkId);
-                    cameraMapper.deleteByExample(example);
+                    deleteMysqlCamera(cameraSdkId);
                 }
             }
         }
         return ServerResponse.createBySuccess();
+    }
+
+    @Override
+    public void deleteMysqlCamera(String cameraSdkId) {
+        TbCameraExample example = new TbCameraExample();
+        TbCameraExample.Criteria c = example.createCriteria();
+        c.andSdkIdEqualTo(cameraSdkId);
+        cameraMapper.deleteByExample(example);
     }
 
     public List<TbCamera> list(int pageNum, int pageSize, String name, Integer groupId,
@@ -137,12 +146,12 @@ public class CameraServiceImpl implements CameraService {
     }
 
     @Override
-    public CameraVO cameraConvertCameraVO(TbCamera camera) {
-        CameraVO cameraVO = new CameraVO();
-        BeanUtils.copyProperties(camera,cameraVO);
-        TbGroupCamera cameraGroup = groupCameraService.getGroupCameraById(cameraVO.getGroupId().toString());
-        cameraVO.setGroupName(cameraGroup.getName());
-        return cameraVO;
+    public CameraDTO cameraConvertToCameraDTO(TbCamera camera) {
+        CameraDTO cameraDTO = new CameraDTO();
+        BeanUtils.copyProperties(camera, cameraDTO);
+        TbGroupCamera cameraGroup = groupCameraService.getGroupCameraById(cameraDTO.getGroupId().toString());
+        cameraDTO.setGroupName(cameraGroup.getName());
+        return cameraDTO;
     }
 
     public ServerResponse<TbCamera> update(TbCamera camera) {

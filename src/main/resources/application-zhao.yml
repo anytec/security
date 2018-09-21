@@ -7,7 +7,7 @@ spring:
   application:
     name: Security
   level:
-    root: info
+    root: debug
   mvc:
     static-path-pattern: /static/**
 #配置bootAdmin地址
