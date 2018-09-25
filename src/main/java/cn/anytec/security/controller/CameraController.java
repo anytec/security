@@ -89,15 +89,15 @@ public class CameraController {
         return cameraService.connect(id);
     }
 
-    @GetMapping("/camera/deleteConnect")
-    public ServerResponse deleteCamera(Integer id){
-        return cameraService.deleteCameraConnect(id);
-    }
-
-    @RequestMapping("/camera/getServerLabel")
-    public ServerResponse getServerLabel(){
-        return cameraService.getServerLabel();
-    }
+//    @GetMapping("/camera/deleteConnect")
+//    public ServerResponse deleteCamera(Integer id){
+//        return cameraService.deleteCameraConnect(id);
+//    }
+//
+//    @RequestMapping("/camera/getServerLabel")
+//    public ServerResponse getServerLabel(){
+//        return cameraService.getServerLabel();
+//    }
 
     @RequestMapping("/camera/getCaptureCameras")
     public ServerResponse getCaptureCameras(){

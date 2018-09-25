@@ -31,7 +31,7 @@ public class FFmpegStreamTask extends Thread {
             logger.info("【ffmpeg command】 {}", Arrays.toString(cmds));
             process=builder.start();
 
-            this.existValue = process.waitFor();
+//            this.existValue = process.waitFor();
             //用一个读输出流类去读
             InputStream fis=process.getInputStream();
 
@@ -39,21 +39,20 @@ public class FFmpegStreamTask extends Thread {
 
             BufferedReader br=new BufferedReader(isr);
 
-            String line=null;
+//            String line=null;
             try {
-                while((line = br.readLine())!=null) {
+                while(br.readLine()!=null) {
                     //有可能发生阻塞的问题
                 }
             }catch (IOException e){
+                this.existValue=2;
             }
-
-            this.existValue = process.waitFor();
+            process.waitFor();
+            this.existValue = process.exitValue();
             logger.info("exitVal:" + existValue);
 
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }catch (InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         } finally {
 
@@ -65,6 +64,20 @@ public class FFmpegStreamTask extends Thread {
             process.destroy();
         }
         return true;
+    }
+    //先判断线程是不是存在，再判断线程拉起的进程是不是存在
+    public boolean isActive(){
+        if(!super.isAlive()){
+            logger.warn("thread for cmd 【 {} 】is not active ", Arrays.toString(cmds));
+            return false;
+        }else if(null == process || !process.isAlive()){
+            logger.warn("process for cmd 【 {} 】 is not active ", Arrays.toString(cmds));
+            return false;
+        }else if(process.isAlive()) {
+            logger.info("thread and process for 【 {} 】 is not active ", Arrays.toString(cmds));
+            return true;
+        }
+        return false;
     }
 
     public Process getProcess() {

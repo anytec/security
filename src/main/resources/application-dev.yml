@@ -21,28 +21,13 @@ spring:
 
 file:
   map:
-    path: /home/n-tech-zhao/map/
+    path: /anytec/server/map/
   personPhotos:
-    path: D:\personPhotos\
+    path: /anytec/server/personPhotos
 
 mybatis:
   mapperLocations: classpath:mapper/*.xml
 
-#  hostIp: 192.168.10.132
-#  port: 8000
-#  token: GxSW-JKSD
-#snapSdk:
-#  hostIp: 192.168.10.212
-#  port: 8000
-#  token: F3Pv-TNLh
-#  url: http://192.168.10.212:8000
-#  version: v1
-#  identifyType: biggest
-#  snapGallery: 158Snap
-#  snapIdentifyNumber: 10
-#  emotionsOpen: true
-#  genderOpen: true
-#  ageOpen: true
 snapSdk:
   hostIp: 192.168.10.213
   port: 8000

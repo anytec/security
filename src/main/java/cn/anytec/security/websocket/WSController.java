@@ -1,6 +1,5 @@
 package cn.anytec.security.websocket;
 
-import cn.anytec.security.component.CameraStreamMonitor;
 import cn.anytec.security.model.websocketmodel.EnrollResp;
 import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
@@ -50,6 +49,8 @@ public class WSController {
         }
         if(previous != null && previous.equals(cameraId)){
             enrollResp.setPlay_stream("");
+            //此处是进程健康性检查
+            wsHandler.registerCamera(cameraId,sessionId,false);
             wsSendHandler.sendPlayStream(enrollResp,cameraId);
             return;
         }
@@ -60,15 +61,15 @@ public class WSController {
         }
         logger.info("previous : "+previous);
         logger.info("camera register : "+cameraId +" , sessionId : "+sessionId);
-        String info = wsHandler.registerCamera(cameraId,sessionId);
+        String info = wsHandler.registerCamera(cameraId,sessionId,true);
 
+        logger.info("正确推送rtmp播放流地址："+cameraId);
         if(info != null && info.equals("error")){
             logger.error("rtmp流出现错误！");
             enrollResp.setPlay_stream("error");
             wsSendHandler.sendPlayStream(enrollResp,cameraId);
             return;
         }
-        logger.info("正确推送rtmp播放流地址："+cameraId);
 
     }
 

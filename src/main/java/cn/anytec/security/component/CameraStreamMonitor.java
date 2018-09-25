@@ -11,10 +11,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
@@ -65,38 +63,10 @@ public class CameraStreamMonitor {
             }
         });
 
-        //如果redis中实例连接数为0,则定期清理掉本实例维护的Process进程
-
-
-//        HashSet<String> =JSONObject.p
-//        streamProcess.keySet().contains("test");
-//        HashSet s = new HashSet();
-//        monitorMap.forEach((camId,conNum)->{
-//            if(conNum>1){
-//                String cmd = "tailf /var/log/syslog";
-//                try {
-//                    Process process = Runtime.getRuntime().exec(cmd);
-//                    streamProcessLocal.put((String) camId,process);
-//                } catch (IOException e) {
-//                    logger.error(camId+" process runtime error");
-//                }
-//            }
-//        });
-//        for (Iterator<String> it = monitorMap.keySet().iterator(); it.hasNext();)
-//            if (test.test(value = it.next())) {
-//                it.remove();
-//                return value;
-//            }
-
-
-//        HashMap hashMap = (HashMap) redisService.getMap("steam-list");
-
     }
 
     public boolean newConnect(TbCamera camera) {
         if (camera != null) {
-//            String cmd = "tailf /var/log/syslog";
-//            try {
 
             //查看redis中是否有该流的处理进程
             if (redisTemplate.opsForHash().hasKey(allProcessLabel, camera.getSdkId())) {
@@ -112,7 +82,6 @@ public class CameraStreamMonitor {
             FFmpegStreamTask task = new FFmpegStreamTask(cmds);
             task.setDaemon(true);
             task.start();
-//                Process process = Runtime.getRuntime().exec(sb.toString());
             streamProcessLocal.put(camera.getSdkId(), task);
 
             redisTemplate.opsForHash().put(allProcessLabel, camera.getSdkId(), "1");
@@ -146,9 +115,10 @@ public class CameraStreamMonitor {
     }
 
     public String createViewProcess(TbCamera camera){
-        if(camera == null){
+        if(camera == null ||camera.getSdkId() == null){
             return "error";
         }
+        //判断本实例和所有实例里是否有该转发进程在跑，如果没有则重新启动，如果有则检查进程状态，非激活状态则重新启动
         redisTemplate.opsForSet().add(serverLabel, camera.getSdkId());
         Map<String,String> allProcessLabelmap = redisTemplate.opsForHash().entries(allProcessLabel);
         String count = allProcessLabelmap.get(camera.getSdkId());
@@ -159,8 +129,7 @@ public class CameraStreamMonitor {
             FFmpegStreamTask task = new FFmpegStreamTask(cmds);
             task.setDaemon(true);
             task.start();
-            redisTemplate.opsForHash().put(allProcessLabel, camera.getSdkId(), "1");
-            streamProcessLocal.put(camera.getSdkId(), task);
+
             try {
                 for(int i=0 ; i<12 ;i++){
                     Thread.sleep(500);
@@ -170,12 +139,48 @@ public class CameraStreamMonitor {
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
+                if(task.getExistValue() != null && task.getExistValue() == 1){
+                    return "error";
+                }
             }
+            redisTemplate.opsForHash().put(allProcessLabel, camera.getSdkId(), "1");
+            streamProcessLocal.put(camera.getSdkId(), task);
             return "success";
         }else if(Integer.parseInt(count) > 0){
+            checkHealthForProcess(camera);
+//            FFmpegStreamTask fFmpegStreamTask = streamProcessLocal.get(camera.getSdkId());
+//            if(null == fFmpegStreamTask || !fFmpegStreamTask.isActive()){
+//                logger.info("local app can not find push stream process ,starting for cmds :{}",Arrays.toString(cmds));
+//                FFmpegStreamTask task = new FFmpegStreamTask(cmds);
+//                task.setDaemon(true);
+//                task.start();
+//                redisTemplate.opsForHash().put(allProcessLabel, camera.getSdkId(), "1");
+//                streamProcessLocal.put(camera.getSdkId(), task);
+//                redisTemplate.opsForSet().add(serverLabel,camera.getSdkId());
+//            }
             return "exist";
         }
-        monitorProgress();
-        return createViewProcess(camera);
+        return "error";
+//        monitorProgress();
+//        return createViewProcess(camera,addFlag);
+    }
+
+    private boolean checkHealthForProcess(TbCamera camera){
+        String rtsp = camera.getStreamAddress();
+        String rtmp = rtmpPrefix+camera.getSdkId();
+        String[] cmds = new String[]{"/usr/bin/ffmpeg", "-loglevel","quiet","-i", rtsp, "-c", "copy", "-f", "flv", "-an", rtmp};
+        FFmpegStreamTask fFmpegStreamTask = streamProcessLocal.get(camera.getSdkId());
+        if(null == fFmpegStreamTask || !fFmpegStreamTask.isActive()){
+            logger.info("local app can not find push stream process ,starting for cmds :{}",Arrays.toString(cmds));
+            FFmpegStreamTask task = new FFmpegStreamTask(cmds);
+            task.setDaemon(true);
+            task.start();
+            streamProcessLocal.put(camera.getSdkId(), task);
+            redisTemplate.opsForSet().add(serverLabel,camera.getSdkId());
+        }
+//        if(addFlag){
+//            redisTemplate.opsForHash().increment(allProcessLabel, camera.getSdkId(), 1);
+//        }
+        return false;
     }
 }

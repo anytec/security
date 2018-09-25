@@ -60,7 +60,7 @@ public class WSHandler {
         }
     }
 
-    String registerCamera(String cameraId,String sessionId){
+    String registerCamera(String cameraId,String sessionId,boolean addFlag){
         String runInfo = null;
         TbCamera camera = cameraService.getCameraBySdkId(cameraId);
         if(cameraId_sessionIdList_map.containsKey(cameraId)){
@@ -72,6 +72,7 @@ public class WSHandler {
                     redisTemplate.opsForHash().increment(allProcessLabel,cameraId, 1);
                 }
             }
+            runInfo = cameraStreamMonitor.createViewProcess(camera);
         }else {
             List<String> sessionIdList = new ArrayList<>();
             sessionIdList.add(sessionId);
@@ -82,6 +83,11 @@ public class WSHandler {
             }
         }
         return runInfo;
+    }
+
+    private boolean checkHealth(String cameraId){
+
+        return false;
     }
 
         /*private Map<String,List<String>> getCameraId_sessionIdList_map(){
