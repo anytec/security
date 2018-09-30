@@ -11,6 +11,8 @@ public class TbGroupPerson {
 
     private Integer totalNumber;
 
+    private String voiceLabel;
+
     public Integer getId() {
         return id;
     }
@@ -49,5 +51,13 @@ public class TbGroupPerson {
 
     public void setTotalNumber(Integer totalNumber) {
         this.totalNumber = totalNumber;
+    }
+
+    public String getVoiceLabel() {
+        return voiceLabel;
+    }
+
+    public void setVoiceLabel(String voiceLabel) {
+        this.voiceLabel = voiceLabel == null ? null : voiceLabel.trim();
     }
 }

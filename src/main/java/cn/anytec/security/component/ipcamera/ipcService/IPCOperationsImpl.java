@@ -1,6 +1,7 @@
 package cn.anytec.security.component.ipcamera.ipcService;
 
 import cn.anytec.security.common.ServerResponse;
+import cn.anytec.security.constant.RedisConst;
 import cn.anytec.security.core.enums.CameraType;
 import cn.anytec.security.core.enums.CaptureCameraStatus;
 import cn.anytec.security.core.exception.BussinessException;
@@ -40,12 +41,11 @@ public class IPCOperationsImpl implements IPCOperations {
     @Autowired
     private CameraService cameraService;
 
-    @Value("${redisKeys.captureCameras}")
-    private String captureCameras;
-    @Value("${redisKeys.captureCamerasInUse}")
-    private String captureCamerasInUse;
+    private String captureCameras = RedisConst.CAPTURECAMERAS;
+    private String captureCamerasInUse = RedisConst.CAPTURECAMERAS_INUSE;
+    private String captureCameraOffline = RedisConst.CAPTURECAMERAS_OFFLINE;
 
-    /*@Scheduled(fixedDelay = 2000)
+    @Scheduled(fixedDelay = 60000)
     public void ping() {
         Map<String,String> capCams = redisTemplate.opsForHash().entries(captureCameras);
         capCams.forEach((macAddress,ipcAddress)->{
@@ -56,22 +56,25 @@ public class IPCOperationsImpl implements IPCOperations {
         capCamsInUse.forEach((macAddress,ipcAddress)->{
             pingCaptureCameras(macAddress,ipcAddress);
         });
-    }*/
+    }
 
     private void pingCaptureCameras(String macAddress, String ipcAddress){
         logger.debug("【pingCaptureCameras】{} , {}",macAddress,ipcAddress);
         String url = "http://"+ipcAddress+"/goform/ping";
         try{
             ipcHttpGet(url);
-            redisTemplate.opsForValue().set(macAddress,"0");
+            redisTemplate.opsForHash().put("pingOffTimes",macAddress,"0");
         }catch (Exception e) {
-            redisTemplate.opsForValue().increment(macAddress,1);
-            logger.debug("【ping off times】{} ",redisTemplate.opsForValue().get(macAddress));
-            if(Long.parseLong(redisTemplate.opsForValue().get(macAddress).toString())>5){
+            redisTemplate.opsForHash().increment("pingOffTimes",macAddress,1);
+            logger.debug("【ping off times】{} ",redisTemplate.opsForHash().get("pingOffTimes",macAddress));
+            if(Long.parseLong(redisTemplate.opsForHash().get("pingOffTimes",macAddress).toString())>10){
+                //cameraService.delete(macAddress);
                 deleteFromCache(macAddress);
                 deleteFromInUseCache(macAddress);
-                cameraService.deleteMysqlCamera(macAddress);
-                logger.debug("【ping delete】");
+                addToOfflineCache(macAddress,ipcAddress);
+                //后面可以把摄像机状态写到enum
+                cameraService.changeOfflineCameraStatus(macAddress,0);
+                logger.info("【ping offline】mac:{}",macAddress);
             }
         }
     }
@@ -140,22 +143,35 @@ public class IPCOperationsImpl implements IPCOperations {
         if(StringUtils.isEmpty(macAddress)){
             throw new BussinessException(1,"【deleteFromInUseCache】mac地址为空，删除抓拍机失败！");
         }
-        if(redisTemplate.opsForHash().hasKey(captureCameras,macAddress)){
-            String ipAddress = (String) redisTemplate.opsForHash().get(captureCameras,macAddress);
+        if(redisTemplate.opsForHash().hasKey(captureCamerasInUse,macAddress)){
+            String ipAddress = (String) redisTemplate.opsForHash().get(captureCamerasInUse,macAddress);
             if(StringUtils.isEmpty(ipAddress)){
                 throw new BussinessException(1,"【deleteFromInUseCache】ip地址为空，删除抓拍机失败！");
             }
-            redisTemplate.opsForHash().put(captureCameras,macAddress,ipAddress);
             redisTemplate.opsForHash().delete(captureCamerasInUse,macAddress);
         }
     }
 
     @Override
+    public void addToOfflineCache(String macAddress, String ipAddress) {
+        logger.info("【addToOfflineCache】mac: {}, ip: {}",macAddress,ipAddress);
+        redisTemplate.opsForHash().put(captureCameraOffline,macAddress,ipAddress);
+    }
+
+    @Override
+    public void deleteFromOfflineCache(String macAddress) {
+        logger.info("【deleteFromOfflineCache】mac: {}",macAddress);
+        if(redisTemplate.opsForHash().hasKey(captureCameraOffline,macAddress)){
+            redisTemplate.opsForHash().delete(captureCameraOffline,macAddress);
+        }
+    }
+
+    @Override
     public void activeCaptureCamera(String macAddress) {
-        logger.info("【activeCaptureCamera】mac: "+macAddress);
+        logger.info("【activeCaptureCamera】mac: {}",macAddress);
         String ipAddress = getIpAddress(macAddress);
         if(StringUtils.isEmpty(ipAddress)){
-            throw new BussinessException(1,"抓拍机 "+macAddress+" 获取不到ip,转换状态active失败");
+            throw new BussinessException(1,"抓拍机 {}"+macAddress+" 获取不到ip,转换状态active失败");
         }
         String active = CaptureCameraStatus.ACTIVE.getMsg();
         String url = "http://"+ipAddress+"/goform/status?mac="+macAddress+"&operation="+active;
@@ -175,12 +191,8 @@ public class IPCOperationsImpl implements IPCOperations {
     }
 
     @Override
-    public void invalidCaptureCamera(String macAddress) {
-        logger.info("【invalidCaptureCamera】mac: "+macAddress);
-        String ipAddress = getIpAddress(macAddress);
-        if(StringUtils.isEmpty(ipAddress)){
-            throw new BussinessException(1,"抓拍机 "+macAddress+" 获取不到ip,转换状态invalid失败");
-        }
+    public void invalidCaptureCamera(String macAddress, String ipAddress) {
+        logger.info("【invalidCaptureCamera】mac: {}, ip: {}",macAddress,ipAddress);
         String invalid = CaptureCameraStatus.INVAILD.getMsg();
         String url = "http://"+ipAddress+"/goform/status?mac="+macAddress+"&operation="+invalid;
         ipcHttpGet(url);
@@ -195,20 +207,33 @@ public class IPCOperationsImpl implements IPCOperations {
         return ServerResponse.createBySuccess(macList);
     }
 
+    @Override
+    public ServerResponse getAllCaptureCameras() {
+        List<String> macList = new ArrayList<>();
+        Map<String,String> captureCameraList = redisTemplate.opsForHash().entries(captureCameras);
+        captureCameraList.forEach((mac,ip)->{
+            macList.add(mac);
+        });
+        Map<String,String> captureCameraInUseList = redisTemplate.opsForHash().entries(captureCamerasInUse);
+        captureCameraInUseList.forEach((mac,ip)->{
+            macList.add(mac);
+        });
+        return ServerResponse.createBySuccess(macList);
+    }
+
     private void ipcHttpGet(String url){
         HttpHeaders requestHeaders = new HttpHeaders();
         HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(null, requestHeaders);
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
         String result = response.getBody();
-        logger.info("ipc response: "+result);
         int statusCode = response.getStatusCodeValue();
-        logger.info("ipc response statuscode: "+statusCode);
         if(statusCode != 200){
+            logger.info("【修改抓拍机状态失败】result: {}",result);
             throw new BussinessException(1,"修改抓拍机状态失败,statuscode："+statusCode);
         }
     }
 
-    private String getIpAddress(String macAddress) {
+    public String getIpAddress(String macAddress) {
         String ipAddress = "";
         if(redisTemplate.opsForHash().hasKey(captureCamerasInUse,macAddress)){
             ipAddress = (String) redisTemplate.opsForHash().get(captureCamerasInUse,macAddress);

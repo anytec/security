@@ -48,4 +48,6 @@ public interface CameraService {
 
     /**校验设备名是否存在*/
     boolean isCameraNameExist(String cameraName);
+
+    void changeOfflineCameraStatus(String cameraSdkId, Integer status);
 }

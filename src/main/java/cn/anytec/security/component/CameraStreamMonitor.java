@@ -53,21 +53,33 @@ public class CameraStreamMonitor {
                 redisTemplate.opsForSet().remove(serverLabel,k);
                 redisTemplate.opsForHash().delete(allProcessLabel,k);
                 logger.info("无回显连接,停止rtmp服务："+k);
-                if(streamProcessLocal.keySet().contains(k)){
+                if(!streamProcessLocal.keySet().contains(k)){
                     FFmpegStreamTask task = streamProcessLocal.get(k);
                     if(task.isAlive()){
                         streamProcessLocal.get(k).destory();
                         //wsSendHandler.sendUnsubscribe(k);
                     }
                 }
+            }else {
+                if (streamProcessLocal.keySet().contains(k)) {
+                    FFmpegStreamTask task = streamProcessLocal.get(k);
+                    if (!task.isAlive()) {
+                        String[] cmds = task.getCmds();
+                        FFmpegStreamTask newTask = new FFmpegStreamTask(cmds);
+                        newTask.setDaemon(true);
+                        newTask.start();
+                        if(newTask.isAlive()){
+                            streamProcessLocal.put(k, newTask);
+                        }
+                        //wsSendHandler.sendUnsubscribe(k);
+                    }
+                }
             }
         });
-
     }
 
     public boolean newConnect(TbCamera camera) {
         if (camera != null) {
-
             //查看redis中是否有该流的处理进程
             if (redisTemplate.opsForHash().hasKey(allProcessLabel, camera.getSdkId())) {
                 logger.info(String.valueOf(redisTemplate.opsForHash().get(allProcessLabel, camera.getSdkId())));

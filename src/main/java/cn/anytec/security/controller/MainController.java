@@ -3,6 +3,7 @@ package cn.anytec.security.controller;
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.component.FRDataHandler;
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.constant.RedisConst;
 import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.model.parammodel.IdenfitySnapParam;
 import cn.anytec.security.service.CameraService;
@@ -34,13 +35,6 @@ public class MainController {
     private CameraService cameraService;
     @Autowired
     private PersonService personService;
-    @Autowired
-    private RedisTemplate redisTemplate;
-    @Autowired
-    private GeneralConfig config;
-
-    @Value("${redisKeys.warningThreshold}")
-    String warningThreshold;
 
     @GetMapping("/v0/camera")
     public String cameras() {
@@ -64,33 +58,6 @@ public class MainController {
     @ResponseBody
     public ServerResponse identifySnap(IdenfitySnapParam param) {
         return frDataHandler.identifySnap(param);
-    }
-
-    @RequestMapping("/getWarningThreshold")
-    @ResponseBody
-    public ServerResponse getWarningThreshold(){
-        int thresholdValue;
-        String threshold = (String)redisTemplate.opsForValue().get(warningThreshold);
-        if(!StringUtils.isEmpty(threshold)){
-            thresholdValue = (int)((Double.parseDouble(threshold))*100);
-        }else {
-            thresholdValue = (int)(Double.parseDouble(config.getWarningThreshold())*100);
-        }
-        return ServerResponse.createBySuccess(thresholdValue);
-    }
-
-    @RequestMapping("/setWarningThreshold")
-    @ResponseBody
-    public ServerResponse setWarningThreshold(@RequestParam("threshold") String threshold){
-        if(!StringUtils.isEmpty(threshold)){
-            double thresholdValue = Double.parseDouble(threshold);
-            if(thresholdValue > 1){
-                thresholdValue = thresholdValue/100;
-                redisTemplate.opsForValue().set(warningThreshold,thresholdValue+"",1, TimeUnit.DAYS);
-                return ServerResponse.createBySuccess();
-            }
-        }
-        return ServerResponse.createByErrorMessage("传入的threshold值有误： "+threshold);
     }
 
     @RequestMapping("/uploadPhotos")

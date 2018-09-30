@@ -24,6 +24,7 @@ public class FrWarning {
     private String cameraGroupName;
     private Integer warningOfWeek;
     private String colorLabel;
+    private String voiceLabel;
 
     public FrWarning(String snapshotUrl, String faceUrl, String wholePhoto) {
         this.faceUrl = faceUrl;
@@ -182,5 +183,13 @@ public class FrWarning {
 
     public void setColorLabel(String colorLabel) {
         this.colorLabel = colorLabel;
+    }
+
+    public String getVoiceLabel() {
+        return voiceLabel;
+    }
+
+    public void setVoiceLabel(String voiceLabel) {
+        this.voiceLabel = voiceLabel;
     }
 }

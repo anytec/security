@@ -39,7 +39,6 @@ public class FindFaceImpl implements FindFaceService {
     @Autowired
     private GeneralConfig config;
 
-
     private HttpHeaders snapRequestHeaders = null;
     private HttpHeaders staticHeaders = null;
     private static Gson gson = new Gson();
@@ -229,7 +228,7 @@ public class FindFaceImpl implements FindFaceService {
             }else if(responseCode == 400){
                 throw new BussinessException(400,"图片未检测到人脸");
             }else {
-                logger.warn("请求未正确响应：" + responseCode);
+                logger.warn("addFace请求未正确响应：" + responseCode);
                 logger.warn(reply);
                 throw new BussinessException(responseCode,"请求未正确响应：" + responseCode);
             }

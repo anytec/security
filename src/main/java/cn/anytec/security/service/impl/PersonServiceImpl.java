@@ -2,6 +2,7 @@ package cn.anytec.security.service.impl;
 
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.constant.RedisConst;
 import cn.anytec.security.core.exception.BussinessException;
 import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.dao.TbPersonMapper;
@@ -185,7 +186,7 @@ public class PersonServiceImpl implements PersonService {
     }
 
     private void removeRedisPerson(TbPerson tbPerson){
-        String redisKey = config.getPeronBySdkId();
+        String redisKey = RedisConst.PERSON_BY_SDKID;
         String personSdkId = tbPerson.getSdkId();
         if (redisTemplate.opsForHash().hasKey(redisKey, personSdkId)) {
             redisTemplate.opsForHash().delete(redisKey,personSdkId);
@@ -202,7 +203,7 @@ public class PersonServiceImpl implements PersonService {
     }
 
     public ServerResponse<TbPerson> getPersonBySdkId(String sdkId) {
-        String redisKey = config.getPeronBySdkId();
+        String redisKey = RedisConst.PERSON_BY_SDKID;
         if (redisTemplate.opsForHash().hasKey(redisKey, sdkId)) {
             String personStr = redisTemplate.opsForHash().get(redisKey, sdkId).toString();
             TbPerson person = JSONObject.parseObject(personStr,TbPerson.class);

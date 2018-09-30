@@ -1,6 +1,7 @@
 package cn.anytec.security.core.util;
 
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.core.enums.UserRole;
 import cn.anytec.security.dao.TbUserMapper;
 import cn.anytec.security.model.TbUser;
 import cn.anytec.security.model.TbUserExample;
@@ -29,11 +30,10 @@ public class PermissionFactory {
         criteria.andUnameEqualTo(uname);
 
         TbUserMapper userMapper = ApplicationContextHolder.getBean(TbUserMapper.class);
-        GeneralConfig config = ApplicationContextHolder.getBean(GeneralConfig.class);
 
         List<TbUser> users = userMapper.selectByExample(userExample);
 
-        return users.size() != 0 && users.get(0).getRole() == config.getAdminRole();
+        return users.size() != 0 && users.get(0).getRole() == UserRole.ADMIN.getRole();
     }
 
 }

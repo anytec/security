@@ -28,6 +28,8 @@ public class GeneralConfig {
     private boolean genderOpen;
     @Value("${snapSdk.ageOpen}")
     private boolean ageOpen;
+    @Value("${snapSdk.identifySnapThreshold}")
+    private String identifySnapThreshold;
     //静态库sdk
     @Value("${staticSdk.hostIp}")
     private String staticSdkIp;
@@ -43,23 +45,9 @@ public class GeneralConfig {
     private String warningThreshold;
     @Value("${staticSdk.staticGallery}")
     private String staticGallery;
-    //md5盐值
-    @Value("${password.salt}")
-    private String passwordSalt;
-    @Value("${role.user}")
-    private int user;
-    @Value("${role.admin}")
-    private int admin;
+
     @Value("${constant.camera}")
     private String cameraUrl;
-    @Value("${redisKeys.cameraBySdkId}")
-    private String cameraBySdkId;
-    @Value("${redisKeys.cameraGroupById}")
-    private String cameraGroupById;
-    @Value("${redisKeys.peronBySdkId}")
-    private String peronBySdkId;
-    @Value("${redisKeys.personGroupById}")
-    private String personGroupById;
     @Value("${camera.rtmpPrefix}")
     private String rtmpPrefix;
 
@@ -124,6 +112,14 @@ public class GeneralConfig {
         return warningThreshold;
     }
 
+    public String getIdentifySnapThreshold() {
+        return identifySnapThreshold;
+    }
+
+    public void setIdentifySnapThreshold(String identifySnapThreshold) {
+        this.identifySnapThreshold = identifySnapThreshold;
+    }
+
     public Integer getSnapIdentifyNumber() {
         return snapIdentifyNumber;
     }
@@ -140,33 +136,6 @@ public class GeneralConfig {
         return ageOpen;
     }
 
-    public String getPasswordSalt() {
-        return passwordSalt;
-    }
-
-    public int getUserRole() {
-        return user;
-    }
-
-    public int getAdminRole() {
-        return admin;
-    }
-
-    public String getCameraBySdkId() {
-        return cameraBySdkId;
-    }
-
-    public String getCameraGroupById() {
-        return cameraGroupById;
-    }
-
-    public String getPeronBySdkId() {
-        return peronBySdkId;
-    }
-
-    public String getPersonGroupById() {
-        return personGroupById;
-    }
     public String getRtmpPrefix() {
         return rtmpPrefix;
     }

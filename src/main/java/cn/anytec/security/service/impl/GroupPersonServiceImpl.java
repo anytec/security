@@ -2,6 +2,7 @@ package cn.anytec.security.service.impl;
 
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.constant.RedisConst;
 import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.dao.TbGroupPersonMapper;
 import cn.anytec.security.dao.TbPersonMapper;
@@ -110,7 +111,7 @@ public class GroupPersonServiceImpl implements GroupPersonService {
     }
 
     private void removeRedisPersonGroup(TbGroupPerson personGroup){
-        String redisKey = config.getPersonGroupById();
+        String redisKey = RedisConst.PERSONGROUP_BY_ID;
         String personGroupId = personGroup.getId().toString();
         if (redisTemplate.opsForHash().hasKey(redisKey, personGroupId)) {
             redisTemplate.opsForHash().delete(redisKey,personGroupId);
@@ -118,7 +119,7 @@ public class GroupPersonServiceImpl implements GroupPersonService {
     }
 
     public ServerResponse<TbGroupPerson> getGroupPersonById(String personGroupId) {
-        String redisKey = config.getPersonGroupById();
+        String redisKey = RedisConst.PERSONGROUP_BY_ID;
         if (redisTemplate.opsForHash().hasKey(redisKey, personGroupId)) {
             String groupPersonStr= (String)redisTemplate.opsForHash().get(redisKey, personGroupId);
             redisTemplate.expire(redisKey, 1, TimeUnit.DAYS);

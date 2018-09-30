@@ -1,7 +1,10 @@
 package cn.anytec.security.component;
 
 import cn.anytec.security.common.ServerResponse;
+import cn.anytec.security.component.ipcamera.ipcService.IPCOperations;
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.constant.RedisConst;
+import cn.anytec.security.core.exception.BussinessException;
 import cn.anytec.security.findface.FindFaceService;
 import cn.anytec.security.findface.model.*;
 import cn.anytec.security.model.TbCamera;
@@ -58,29 +61,56 @@ public class FRDataHandler {
     private WSSendHandler wsSendHandler;
     @Autowired
     private RedisTemplate redisTemplate;
+    @Autowired
+    private IPCOperations ipcOperations;
 
-    @Value("${redisKeys.warningThreshold}")
-    String warningThreshold;
+    private String warningThreshold = RedisConst.WARNING_THRESHOLD;
 
     public void recieveSnap(String cameraSdkId, String timestamp, String bbox, MultipartFile photo) {
-        LocalDateTime localDateTime = LocalDateTime.parse(timestamp);
-        TimeModel timeModel = new TimeModel(localDateTime);
-        List<IdentifyFace> faceList = addFace(photo,cameraSdkId,bbox);
-        if (!CollectionUtils.isEmpty(faceList)) {
-            TbCamera camera = cameraService.getCameraBySdkId(cameraSdkId);
-            if(camera != null){
-                faceList.forEach(face -> {
-                    handleSnapshot(face, timeModel, camera);
-                    IdentifyPojo identifyPojo = identifyInStaticGallery(face.getThumbnail());
-                    if (identifyPojo != null) {
-                        handleWarningSnap(identifyPojo,face, timeModel, camera);
-                    }
-                });
-            }else {
-                logger.info("【获取camera失败】cameraSdkId:{}",cameraSdkId);
+        TbCamera camera = cameraService.getCameraBySdkId(cameraSdkId);
+        if(camera != null){
+            LocalDateTime localDateTime = LocalDateTime.parse(timestamp);
+            TimeModel timeModel = new TimeModel(localDateTime);
+            if(checkTime(timeModel)){
+                List<IdentifyFace> faceList = addFace(photo,cameraSdkId,bbox);
+                if (!CollectionUtils.isEmpty(faceList)) {
+                    faceList.forEach(face -> {
+                        handleSnapshot(face, timeModel, camera);
+                        IdentifyPojo identifyPojo = identifyInStaticGallery(face.getThumbnail());
+                        if (identifyPojo != null) {
+                            handleWarningSnap(identifyPojo,face, timeModel, camera);
+                        }
+                    });
+                }
+            }
+        }else {
+            logger.info("【获取camera失败】cameraSdkId:{},快照不入库",cameraSdkId);
+            try{
+                ipcOperations.standbyCaptureCamera(cameraSdkId);
+            }catch (BussinessException e){
+                logger.error("【获取ip失败】cameraSdkId: {}",cameraSdkId);
             }
         }
     }
+
+    /*检查快照传入时间是否符合当前时间**/
+    public boolean checkTime(TimeModel timeModel){
+        long nowTimestamp = System.currentTimeMillis();
+        long timestamp = timeModel.getTimestamp();
+        if(timestamp > nowTimestamp){
+            if((timestamp - nowTimestamp)/(1000*60) <30){
+                return true;
+            }
+            logger.info("【receiveSnap】快照传入时间{},大于当前时间30分钟，快照不录入",timeModel.getCatchTime());
+        }else if(timestamp <= nowTimestamp){
+            if((nowTimestamp - timestamp)/(1000*60) <30){
+                return true;
+            }
+            logger.info("【receiveSnap】快照传入时间{},小于当前时间30分钟，快照不录入",timeModel.getCatchTime());
+        }
+        return false;
+    }
+
 
     //快照入sdk动态库
     public List<IdentifyFace> addFace(MultipartFile photo, String cameraSdkId, String bbox) {
@@ -118,6 +148,8 @@ public class FRDataHandler {
         snapShot.setCameraName(camera.getName());
         snapShot.setEmotions(emotions);
         snapShot.setGender(face.getGender());
+        Integer age = Integer.parseInt(face.getAge().toString().split("\\.")[0]);
+        snapShot.setAge(age);
         snapShot.setFaceSdkId(face.getId());
         snapShot.setWholePhoto(face.getPhoto());
         wsSendHandler.sendSnapShot(snapShot, camera.getSdkId());
@@ -127,9 +159,14 @@ public class FRDataHandler {
             snapshotAddition.put("firstEmotion",emotions.get(0));
             snapshotAddition.put("secondEmotion",emotions.get(1));
         }
-        Integer age = Integer.parseInt(face.getAge().toString().split("\\.")[0]);
-        snapshotAddition.put("age",age);
         snapshotAddition.put("timestamp", timeModel.getTimestamp());
+        String day =timeModel.getCatchTime().split(" ")[0];
+        snapshotAddition.put("day",day);
+        String time = timeModel.getCatchTime().split(" ")[1];
+        Integer timeRange = getTimeRange(time);
+        if(timeRange != null){
+            snapshotAddition.put("timeRange",timeRange);
+        }
         mongoDBService.addSnapShot(JSONObject.toJSONString(snapShot), snapshotAddition);
         //今日抓拍数推送
         sendSnapshotTimes(timeModel);
@@ -160,6 +197,36 @@ public class FRDataHandler {
         locationList.add("39.902326,116.420045");*/
         Integer i = new Random().nextInt(locationList.size());
         return locationList.get(i);
+    }
+
+    private Integer getTimeRange(String time){
+        Integer timeOclock = Integer.parseInt(time.split(":")[0]);
+        if(timeOclock <2){
+            return 1;
+        }else if(timeOclock >= 2 && timeOclock < 4 ){
+            return 2;
+        }else if(timeOclock >= 4 && timeOclock < 6 ){
+            return 3;
+        }else if(timeOclock >= 6 && timeOclock < 8 ){
+            return 4;
+        }else if(timeOclock >= 8 && timeOclock < 10 ){
+            return 5;
+        }else if(timeOclock >= 10 && timeOclock < 12 ){
+            return 6;
+        }else if(timeOclock >= 12 && timeOclock < 14 ){
+            return 7;
+        }else if(timeOclock >= 14 && timeOclock < 16 ){
+            return 8;
+        }else if(timeOclock >= 16 && timeOclock < 18 ){
+            return 9;
+        }else if(timeOclock >= 18 && timeOclock < 20 ){
+            return 10;
+        }else if(timeOclock >= 20 && timeOclock < 22 ){
+            return 11;
+        }else if(timeOclock >= 22 && timeOclock < 24 ){
+            return 12;
+        }
+        return null;
     }
 
     //推送今日抓拍快照次数
@@ -249,12 +316,13 @@ public class FRDataHandler {
             warning.setPersonName(person.getName());
             warning.setGender(person.getGender());
             warning.setPersonGroupId(person.getGroupId());
-            warning.setPersonGroupName(person.getGroupName());
             warning.setIdNumber(person.getIdNumber());
             warning.setFaceSdkId(person.getSdkId());
             TbGroupPerson personGroup = groupPersonService.getGroupPersonById(person.getGroupId().toString()).getData();
             if(personGroup != null){
                 warning.setColorLabel(personGroup.getColorLabel());
+                warning.setPersonGroupName(personGroup.getName());
+                warning.setVoiceLabel(personGroup.getVoiceLabel());
             }
         }
     }

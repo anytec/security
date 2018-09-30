@@ -433,6 +433,76 @@ public class TbGroupPersonExample {
             addCriterion("total_number not between", value1, value2, "totalNumber");
             return (Criteria) this;
         }
+
+        public Criteria andVoiceLabelIsNull() {
+            addCriterion("voice_label is null");
+            return (Criteria) this;
+        }
+
+        public Criteria andVoiceLabelIsNotNull() {
+            addCriterion("voice_label is not null");
+            return (Criteria) this;
+        }
+
+        public Criteria andVoiceLabelEqualTo(String value) {
+            addCriterion("voice_label =", value, "voiceLabel");
+            return (Criteria) this;
+        }
+
+        public Criteria andVoiceLabelNotEqualTo(String value) {
+            addCriterion("voice_label <>", value, "voiceLabel");
+            return (Criteria) this;
+        }
+
+        public Criteria andVoiceLabelGreaterThan(String value) {
+            addCriterion("voice_label >", value, "voiceLabel");
+            return (Criteria) this;
+        }
+
+        public Criteria andVoiceLabelGreaterThanOrEqualTo(String value) {
+            addCriterion("voice_label >=", value, "voiceLabel");
+            return (Criteria) this;
+        }
+
+        public Criteria andVoiceLabelLessThan(String value) {
+            addCriterion("voice_label <", value, "voiceLabel");
+            return (Criteria) this;
+        }
+
+        public Criteria andVoiceLabelLessThanOrEqualTo(String value) {
+            addCriterion("voice_label <=", value, "voiceLabel");
+            return (Criteria) this;
+        }
+
+        public Criteria andVoiceLabelLike(String value) {
+            addCriterion("voice_label like", value, "voiceLabel");
+            return (Criteria) this;
+        }
+
+        public Criteria andVoiceLabelNotLike(String value) {
+            addCriterion("voice_label not like", value, "voiceLabel");
+            return (Criteria) this;
+        }
+
+        public Criteria andVoiceLabelIn(List<String> values) {
+            addCriterion("voice_label in", values, "voiceLabel");
+            return (Criteria) this;
+        }
+
+        public Criteria andVoiceLabelNotIn(List<String> values) {
+            addCriterion("voice_label not in", values, "voiceLabel");
+            return (Criteria) this;
+        }
+
+        public Criteria andVoiceLabelBetween(String value1, String value2) {
+            addCriterion("voice_label between", value1, value2, "voiceLabel");
+            return (Criteria) this;
+        }
+
+        public Criteria andVoiceLabelNotBetween(String value1, String value2) {
+            addCriterion("voice_label not between", value1, value2, "voiceLabel");
+            return (Criteria) this;
+        }
     }
 
     public static class Criteria extends GeneratedCriteria {

@@ -2,6 +2,7 @@ package cn.anytec.security.controller;
 
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.component.ipcamera.ipcService.IPCOperations;
+import cn.anytec.security.constant.RedisConst;
 import cn.anytec.security.core.annotion.OperLog;
 import cn.anytec.security.core.annotion.Permission;
 import cn.anytec.security.core.enums.PermissionType;
@@ -28,17 +29,14 @@ public class CameraController {
     @Autowired
     private IPCOperations ipcOperations;
 
-    @Value("${redisKeys.captureCameras}")
-    private String captureCameras;
-    @Value("${redisKeys.captureCamerasInUse}")
-    private String captureCamerasInUse;
+    private String captureCameras = RedisConst.CAPTURECAMERAS;
 
     @OperLog(value = "添加设备", key="id,name")
     @PostMapping("/camera/add")
     @Permission(value = "添加设备", method = PermissionType.IS_ADMIN)
     public ServerResponse add(TbCamera camera){
         if(cameraService.isCameraNameExist(camera.getName())){
-            return ServerResponse.createByErrorMessage("设备名称 "+camera.getName()+" 已存在");
+            return ServerResponse.createByErrorMessage("【设备名称已存在】"+camera.getName());
         }
         return cameraService.add(camera);
     }
@@ -55,7 +53,8 @@ public class CameraController {
     @RequestMapping("/camera/list")
     @ResponseBody
 //    @Permission(value = "查询设备", method = PermissionType.IS_ADMIN)
-    public ServerResponse list(@RequestParam(value = "pageNum",defaultValue = "1") int pageNum, @RequestParam(value = "pageSize",defaultValue = "10") int pageSize,
+    public ServerResponse list(@RequestParam(value = "pageNum",defaultValue = "1") int pageNum,
+                               @RequestParam(value = "pageSize",defaultValue = "10") int pageSize,
                                @RequestParam(value = "name",required = false)String name,
                                @RequestParam(value = "groupId",required = false)Integer groupId,
                                @RequestParam(value = "type",required = false)String type,
@@ -79,7 +78,7 @@ public class CameraController {
         return cameraService.update(camera);
     }
 
-    @GetMapping("/cameras")
+    /*@GetMapping("/cameras")
     public String getCameras() {
         return cameraService.cameras();
     }
@@ -89,19 +88,24 @@ public class CameraController {
         return cameraService.connect(id);
     }
 
-//    @GetMapping("/camera/deleteConnect")
-//    public ServerResponse deleteCamera(Integer id){
-//        return cameraService.deleteCameraConnect(id);
-//    }
-//
-//    @RequestMapping("/camera/getServerLabel")
-//    public ServerResponse getServerLabel(){
-//        return cameraService.getServerLabel();
-//    }
+    @GetMapping("/camera/deleteConnect")
+    public ServerResponse deleteCamera(Integer id){
+        return cameraService.deleteCameraConnect(id);
+    }*/
+
+    @RequestMapping("/camera/getServerLabel")
+    public ServerResponse getServerLabel(){
+        return cameraService.getServerLabel();
+    }
 
     @RequestMapping("/camera/getCaptureCameras")
     public ServerResponse getCaptureCameras(){
         return ipcOperations.getCaptureCameras();
+    }
+
+    @RequestMapping("/camera/getAllCaptureCameras")
+    public ServerResponse getAllCaptureCameras(){
+        return ipcOperations.getAllCaptureCameras();
     }
 
     @RequestMapping("/camera/activeCaptureCamera")
@@ -110,14 +114,16 @@ public class CameraController {
     }
 
     @RequestMapping("/camera/invalidCaptureCamera")
-    public void invalidCaptureCamera(@RequestParam(value = "macAddress")String macAddress){
-        ipcOperations.invalidCaptureCamera(macAddress);
+    public void invalidCaptureCamera(@RequestParam(value = "macAddress")String macAddress,
+                                     @RequestParam(value = "ipAddress")String ipAddress){
+        ipcOperations.invalidCaptureCamera(macAddress,ipAddress);
     }
 
     @PostMapping("/addCaptureCamera")
-    public void addToCache(String mac, String ipAddress) {
-        if(!StringUtils.isEmpty(mac) && !StringUtils.isEmpty(ipAddress)){
-            redisTemplate.opsForHash().put(captureCameras,mac,ipAddress);
+    public void addToCache(@RequestParam(value = "macAddress")String macAddress,
+                           @RequestParam(value = "ipAddress")String ipAddress){
+        if(!StringUtils.isEmpty(macAddress) && !StringUtils.isEmpty(ipAddress)){
+            redisTemplate.opsForHash().put(captureCameras,macAddress,ipAddress);
         }
     }
 
