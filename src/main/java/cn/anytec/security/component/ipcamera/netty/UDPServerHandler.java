@@ -61,6 +61,7 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
                     String redisIp = redisTemplate.opsForHash().get(captureCameraOffline,macAddress).toString();
                     updateCameraPlayAddr(ipAddress, camera, redisIp);
                     ipcOperations.deleteFromOfflineCache(macAddress);
+                    ipcOperations.addToCache(macAddress,ipAddress);
                 }
                 if(camera.getCameraStatus().equals(1)){
                     logger.info("【抓拍机存在，状态为active】macAddress:{}",macAddress);

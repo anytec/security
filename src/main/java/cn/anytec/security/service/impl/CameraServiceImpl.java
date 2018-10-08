@@ -50,8 +50,7 @@ public class CameraServiceImpl implements CameraService {
 
     @Value("${camera.rtmpPrefix}")
     private String rtmpPrefix;
-    private String captureCameras = RedisConst.CAPTURECAMERAS;
-    private String captureCamerasInUse = RedisConst.CAPTURECAMERAS_INUSE;
+    private String captureCamerasOffline = RedisConst.CAPTURECAMERAS_OFFLINE;
 
     public TbCamera getCameraById(Integer cameraId) {
         TbCamera camera = cameraMapper.selectByPrimaryKey(cameraId);
@@ -158,27 +157,32 @@ public class CameraServiceImpl implements CameraService {
         TbCamera cam = getById(camera.getId());
         String cameraSdkId = cam.getSdkId();
         if (cam.getCameraType().equals(CameraType.CaptureCamera.getMsg())) {
-            if(!StringUtils.isEmpty(camera.getSdkId()) && !cameraSdkId.equals(camera.getSdkId())){
-                cameraSdkId = camera.getSdkId();
-                if (camera.getCameraStatus() == 0) {
-                    ipcOperations.standbyCaptureCamera(cameraSdkId);
-                } else if (camera.getCameraStatus() == 1) {
-                    ipcOperations.activeCaptureCamera(cameraSdkId);
-                    ipcOperations.addToInUseCache(cameraSdkId);
-                    ipcOperations.deleteFromCache(cameraSdkId);
-                }
+            if(redisTemplate.opsForHash().hasKey(captureCamerasOffline,cameraSdkId)){
+                return ServerResponse.createByErrorMessage("设备 "+cameraSdkId+" 不在线,不支持修改！");
             }else {
-                if (camera.getCameraStatus() == 0) {
-                    ipcOperations.standbyCaptureCamera(cam.getSdkId());
-                    ipcOperations.addToCache(cam.getSdkId());
-                    ipcOperations.deleteFromInUseCache(cam.getSdkId());
-                } else if (camera.getCameraStatus() == 1) {
-                    ipcOperations.activeCaptureCamera(cam.getSdkId());
-                    ipcOperations.addToInUseCache(cam.getSdkId());
-                    ipcOperations.deleteFromCache(cam.getSdkId());
+                if(camera.getCameraStatus() != null){
+                    if(!StringUtils.isEmpty(camera.getSdkId()) && !cameraSdkId.equals(camera.getSdkId())){
+                        cameraSdkId = camera.getSdkId();
+                        if (camera.getCameraStatus() == 0) {
+                            ipcOperations.standbyCaptureCamera(cameraSdkId);
+                        } else if (camera.getCameraStatus() == 1) {
+                            ipcOperations.activeCaptureCamera(cameraSdkId);
+                            ipcOperations.addToInUseCache(cameraSdkId);
+                            ipcOperations.deleteFromCache(cameraSdkId);
+                        }
+                    }else {
+                        if (camera.getCameraStatus() == 0) {
+                            ipcOperations.standbyCaptureCamera(cam.getSdkId());
+                            ipcOperations.addToCache(cam.getSdkId());
+                            ipcOperations.deleteFromInUseCache(cam.getSdkId());
+                        } else if (camera.getCameraStatus() == 1) {
+                            ipcOperations.activeCaptureCamera(cam.getSdkId());
+                            ipcOperations.addToInUseCache(cam.getSdkId());
+                            ipcOperations.deleteFromCache(cam.getSdkId());
+                        }
+                    }
                 }
             }
-
         }
         int updateCount = cameraMapper.updateByPrimaryKeySelective(camera);
         if (updateCount > 0) {
