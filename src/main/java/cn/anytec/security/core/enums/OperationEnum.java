@@ -12,10 +12,10 @@ public class OperationEnum {
         put("user", "用户管理");
         put("log", "日志管理");
         put("camera", "设备管理");
-        put("data", "数据可视化");
-        put("groupCamera", "历史人脸");
-        put("groupPerson", "布控管理");
-        put("history", "历史人脸");
+        put("data", "数据查询");
+        put("groupCamera", "设备组管理");
+        put("groupPerson", "人员底库管理");
+        put("history", "历史查询");
         put("person", "人员管理");
     }};
 }

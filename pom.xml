@@ -143,12 +143,12 @@
 			<version>1.6.4</version>
 		</dependency>
 		<!-- =========================================== -->
-		<!-- ================ rabbitMQ ==================== -->
+		<!-- ================ rabbitMQ ====================
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-amqp</artifactId>
 		</dependency>
-		<!-- =========================================== -->
+		 =========================================== -->
 		<!-- ================ 多文件上传 ==================== -->
 		<dependency>
 			<groupId>commons-io</groupId>
