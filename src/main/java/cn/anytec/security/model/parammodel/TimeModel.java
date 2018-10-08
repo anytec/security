@@ -18,7 +18,6 @@ public class TimeModel {
 
         ZonedDateTime zonedDateTime= ZonedDateTime.of(localDateTime,ZoneId.of("UTC")).withZoneSameInstant(ZoneId.systemDefault());
         long timestamp = zonedDateTime.toInstant().toEpochMilli();
-
         this.dayOfWeek = zonedDateTime.getDayOfWeek().getValue();
         this.hour = zonedDateTime.getHour();
         this.minute = zonedDateTime.getMinute();

@@ -1,6 +1,7 @@
 package cn.anytec.security.component.mongo;
 
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.constant.RedisConst;
 import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.model.TbGroupCamera;
 import cn.anytec.security.model.TbGroupPerson;
@@ -9,9 +10,8 @@ import cn.anytec.security.service.CameraService;
 import cn.anytec.security.service.GroupCameraService;
 import cn.anytec.security.service.GroupPersonService;
 import com.alibaba.fastjson.JSONObject;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.MongoClient;
+import com.mongodb.*;
+import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -53,15 +53,13 @@ public class MongoDBServiceImpl implements MongoDBService {
     private String configSnapshot;
     @Value("${mongo.warningFaceCollection}")
     private String configWarning_face;
-    @Value("${redisKeys.personCounting}")
-    private String personCounting;
-
     private  MongoClient mongoClient;
     private  MongoDatabase database;
     private  MongoCollection<Document> snapshotCollection;
     private  MongoCollection<Document> warningFaceCollection;
 
     private SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+    private String personCounting = RedisConst.PERSON_COUNTING;
 
     public MongoDBServiceImpl() {
         logger.info("======= 初始化MongoDB =======");
@@ -69,7 +67,10 @@ public class MongoDBServiceImpl implements MongoDBService {
 
     @PostConstruct
     public void init(){
-        mongoClient = new MongoClient(host);
+        MongoClientOptions.Builder build = new MongoClientOptions.Builder();
+        build.connectionsPerHost(100);
+        MongoClientOptions myOptions = build.build();
+        mongoClient = new MongoClient(host,myOptions);
         database = mongoClient.getDatabase(databaseName);
         snapshotCollection = database.getCollection(configSnapshot);
         warningFaceCollection = database.getCollection(configWarning_face);
@@ -218,10 +219,12 @@ public class MongoDBServiceImpl implements MongoDBService {
             String cameraSdkId = data.getString("cameraSdkId");
             if(!StringUtils.isEmpty(cameraSdkId)){
                 TbCamera camera = cameraService.getCameraBySdkId(cameraSdkId);
-                TbGroupCamera cameraGroup = groupCameraService.getGroupCameraById(camera.getGroupId().toString());
-                data.put("cameraName", camera.getName());
-                if(cameraGroup != null){
-                    data.put("cameraGroupName", cameraGroup.getName());
+                if(camera != null){
+                    data.put("cameraName", camera.getName());
+                    TbGroupCamera cameraGroup = groupCameraService.getGroupCameraById(camera.getGroupId().toString());
+                    if(cameraGroup != null){
+                        data.put("cameraGroupName", cameraGroup.getName());
+                    }
                 }
             }
         }
@@ -292,11 +295,13 @@ public class MongoDBServiceImpl implements MongoDBService {
             String cameraSdkId = data.getString("cameraSdkId");
             if(!StringUtils.isEmpty(cameraSdkId)){
                 TbCamera camera = cameraService.getCameraBySdkId(cameraSdkId);
-                data.put("cameraName", camera.getName());
-                data.put("cameraStatus",camera.getCameraStatus());
-                TbGroupCamera cameraGroup = groupCameraService.getGroupCameraById(camera.getGroupId().toString());
-                if(cameraGroup != null){
-                    data.put("cameraGroupName", cameraGroup.getName());
+                if(camera != null){
+                    data.put("cameraName", camera.getName());
+                    data.put("cameraStatus",camera.getCameraStatus());
+                    TbGroupCamera cameraGroup = groupCameraService.getGroupCameraById(camera.getGroupId().toString());
+                    if(cameraGroup != null){
+                        data.put("cameraGroupName", cameraGroup.getName());
+                    }
                 }
             }
             if(cameraSnapCount.containsKey(cameraSdkId)){
@@ -330,13 +335,13 @@ public class MongoDBServiceImpl implements MongoDBService {
         JSONObject result = new JSONObject();
         dayCameraTimeMap.forEach((day, value) -> {
             List<JSONObject> dayCameraCountList = new ArrayList<>();
-            value.forEach((cammeraName, timeDbObjectList) -> {
+            value.forEach((cameraName, timeDbObjectList) -> {
                 List<String> countList = new ArrayList<>();
                 String key = "";
                 if(paramMap.containsKey("cameraGroupIds")){
-                    key = day+",camGroup:"+cammeraName;
+                    key = day+",camGroup:"+cameraName;
                 }else {
-                    key = day+",cam:"+cammeraName;
+                    key = day+",cam:"+cameraName;
                 }
                 if (redisTemplate.opsForHash().hasKey(personCounting, key)) {
                     String countStr =  redisTemplate.opsForHash().get(personCounting, key).toString();
@@ -357,7 +362,7 @@ public class MongoDBServiceImpl implements MongoDBService {
                     }
                 }
                 JSONObject cameraCountList = new JSONObject();
-                cameraCountList.put(cammeraName, countList);
+                cameraCountList.put(cameraName, countList);
                 dayCameraCountList.add(cameraCountList);
             });
             result.put(day, dayCameraCountList);
@@ -678,5 +683,4 @@ public class MongoDBServiceImpl implements MongoDBService {
         }
         return result;
     }
-
 }

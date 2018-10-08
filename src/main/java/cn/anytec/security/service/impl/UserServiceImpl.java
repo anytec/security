@@ -3,7 +3,9 @@ package cn.anytec.security.service.impl;
 import cn.anytec.security.common.ResponseCode;
 import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.constant.Const;
 import cn.anytec.security.core.enums.SecurityExceptionEnum;
+import cn.anytec.security.core.enums.UserRole;
 import cn.anytec.security.core.enums.UserStatus;
 import cn.anytec.security.core.exception.BussinessException;
 import cn.anytec.security.core.log.LogObjectHolder;
@@ -14,6 +16,7 @@ import cn.anytec.security.model.TbUserExample;
 import cn.anytec.security.model.dto.UserDTO;
 import cn.anytec.security.service.UserService;
 import cn.anytec.security.util.MD5Util;
+import com.github.pagehelper.Constant;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.google.common.base.Splitter;
@@ -49,7 +52,7 @@ public class UserServiceImpl implements UserService {
         if (users.size() == 0) {
             return ServerResponse.createByErrorMessage("账号不存在");
         }
-        String md5Pwd = MD5Util.MD5EncodeUtf8(upass + config.getPasswordSalt());
+        String md5Pwd = MD5Util.MD5EncodeUtf8(upass + Const.PWD_SALT);
         criteria.andUpassEqualTo(md5Pwd);
         List<TbUser> userList = userMapper.selectByExample(userExample);
         if (userList.size() == 0) {
@@ -72,9 +75,9 @@ public class UserServiceImpl implements UserService {
             return validResponse;
         }
         user.setStatus(UserStatus.ENABLE);
-        user.setRole(config.getUserRole());
+        user.setRole(UserRole.USER.getRole());
         //MD5加密
-        user.setUpass(MD5Util.MD5EncodeUtf8(user.getUpass() + config.getPasswordSalt()));
+        user.setUpass(MD5Util.MD5EncodeUtf8(user.getUpass() + Const.PWD_SALT));
         int resultCount = userMapper.insert(user);
         if (resultCount == 0) {
             return ServerResponse.createByErrorMessage("注册失败");
@@ -153,7 +156,7 @@ public class UserServiceImpl implements UserService {
         TbUser updateUser = new TbUser();
         BeanUtils.copyProperties(user, updateUser, "id","upass", "account", "role");
         updateUser.setAccount(selectByPrimaryKey.getAccount());
-        updateUser.setUpass(user.getUpass() == null ? null : MD5Util.MD5EncodeUtf8(user.getUpass() + config.getPasswordSalt()));
+        updateUser.setUpass(user.getUpass() == null ? null : MD5Util.MD5EncodeUtf8(user.getUpass() + Const.PWD_SALT));
         TbUserExample example = new TbUserExample();
         TbUserExample.Criteria criteria = example.createCriteria();
         criteria.andStatusEqualTo(UserStatus.ENABLE);
@@ -179,7 +182,7 @@ public class UserServiceImpl implements UserService {
     }
 
     public ServerResponse checkAdminRole(TbUser user) {
-        if (user != null && user.getRole().intValue() == config.getAdminRole()) {
+        if (user != null && user.getRole().intValue() == UserRole.ADMIN.getRole()) {
             return ServerResponse.createBySuccess();
         }
         return ServerResponse.createByError();

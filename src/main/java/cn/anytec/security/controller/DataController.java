@@ -31,7 +31,6 @@ public class DataController {
         return ServerResponse.createByErrorMessage("snapCounting发生错误！");
     }
 
-    //改peopleCounting
     @RequestMapping("/peopleCounting")
     @ResponseBody
     public ServerResponse peopleCounting(HttpServletRequest request){

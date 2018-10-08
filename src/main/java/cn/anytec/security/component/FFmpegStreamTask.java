@@ -88,4 +88,7 @@ public class FFmpegStreamTask extends Thread {
         return this.existValue;
     }
 
+    public String[] getCmds() {
+        return cmds;
+    }
 }

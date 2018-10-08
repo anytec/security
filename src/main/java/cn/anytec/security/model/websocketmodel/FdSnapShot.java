@@ -7,6 +7,7 @@ public class FdSnapShot {
     private String snapshotUrl;
     private String cameraName;
     private String gender;
+    private Integer age;
     private String faceSdkId;
     private String wholePhoto;
     private List<String> emotions;
@@ -65,5 +66,13 @@ public class FdSnapShot {
 
     public void setWholePhoto(String wholePhoto) {
         this.wholePhoto = wholePhoto;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
     }
 }

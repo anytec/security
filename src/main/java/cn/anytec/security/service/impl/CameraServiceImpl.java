@@ -4,6 +4,7 @@ import cn.anytec.security.common.ServerResponse;
 import cn.anytec.security.component.CameraStreamMonitor;
 import cn.anytec.security.component.ipcamera.ipcService.IPCOperations;
 import cn.anytec.security.config.GeneralConfig;
+import cn.anytec.security.constant.RedisConst;
 import cn.anytec.security.core.enums.CameraType;
 import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.dao.TbCameraMapper;
@@ -49,10 +50,8 @@ public class CameraServiceImpl implements CameraService {
 
     @Value("${camera.rtmpPrefix}")
     private String rtmpPrefix;
-    @Value("${redisKeys.captureCameras}")
-    private String captureCameras;
-    @Value("${redisKeys.captureCamerasInUse}")
-    private String captureCamerasInUse;
+    private String captureCameras = RedisConst.CAPTURECAMERAS;
+    private String captureCamerasInUse = RedisConst.CAPTURECAMERAS_INUSE;
 
     public TbCamera getCameraById(Integer cameraId) {
         TbCamera camera = cameraMapper.selectByPrimaryKey(cameraId);
@@ -83,7 +82,7 @@ public class CameraServiceImpl implements CameraService {
     }
 
     public ServerResponse delete(String cameraSdkIds) {
-        String cameraBySdkId = config.getCameraBySdkId();
+        String cameraBySdkId = RedisConst.CAMERA_BY_SDKID;
         List<String> cameraSdkIdList = Splitter.on(",").splitToList(cameraSdkIds);
         List<TbCamera> cameraList = cameraMapper.selectInCameraSdkIds(cameraSdkIdList);
         for (String cameraSdkId : cameraSdkIdList) {
@@ -93,17 +92,18 @@ public class CameraServiceImpl implements CameraService {
                     if (redisTemplate.opsForHash().hasKey(cameraBySdkId, cameraSdkId)) {
                         redisTemplate.opsForHash().delete(cameraBySdkId, cameraSdkId);
                     }
+                    deleteMysqlCamera(cameraSdkId);
                     if (camera.getCameraType().equals(CameraType.CaptureCamera.getMsg())) {
                         //删除redis里的抓拍机
+                        String ipAddress = ipcOperations.getIpAddress(cameraSdkId);
+                        ipcOperations.deleteFromInUseCache(cameraSdkId);
+                        ipcOperations.deleteFromCache(cameraSdkId);
                         try {
-                            ipcOperations.invalidCaptureCamera(cameraSdkId);
+                            ipcOperations.invalidCaptureCamera(cameraSdkId,ipAddress);
                         }catch (Exception e){
                             e.printStackTrace();
                         }
-                        ipcOperations.deleteFromInUseCache(cameraSdkId);
-                        ipcOperations.deleteFromCache(cameraSdkId);
                     }
-                    deleteMysqlCamera(cameraSdkId);
                 }
             }
         }
@@ -190,7 +190,7 @@ public class CameraServiceImpl implements CameraService {
     }
 
     private void removeRedisCamera(TbCamera camera) {
-        String redisKey = config.getCameraBySdkId();
+        String redisKey = RedisConst.CAMERA_BY_SDKID;
         String cameraSdkId = camera.getSdkId();
         if (redisTemplate.opsForHash().hasKey(redisKey, cameraSdkId)) {
             redisTemplate.opsForHash().delete(redisKey, cameraSdkId);
@@ -198,7 +198,7 @@ public class CameraServiceImpl implements CameraService {
     }
 
     public TbCamera getCameraBySdkId(String sdkId) {
-        String redisKey = config.getCameraBySdkId();
+        String redisKey = RedisConst.CAMERA_BY_SDKID;
         if (redisTemplate.opsForHash().hasKey(redisKey, sdkId)) {
             String cameraStr = redisTemplate.opsForHash().get(redisKey, sdkId).toString();
             TbCamera camera = JSONObject.parseObject(cameraStr, TbCamera.class);
@@ -236,15 +236,13 @@ public class CameraServiceImpl implements CameraService {
 
     public ServerResponse<List<String>> getServerLabel() {
         List<String> resultList = new ArrayList<>();
-
         List<Map<String, Object>> serverLabelList = cameraMapper.selectServerLabel();
         if (serverLabelList.size() > 0) {
             for (Map<String, Object> map : serverLabelList) {
                 resultList.add(map.get("serverLabel").toString());
             }
-            return ServerResponse.createBySuccess(resultList);
         }
-        return ServerResponse.createByError();
+        return ServerResponse.createBySuccess(resultList);
     }
 
     @Override
@@ -303,5 +301,20 @@ public class CameraServiceImpl implements CameraService {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void changeOfflineCameraStatus(String cameraSdkId, Integer status) {
+        TbCamera camera = getCameraBySdkId(cameraSdkId);
+        if (camera != null) {
+            if (camera.getCameraStatus() != status) {
+                camera.setCameraStatus(status);
+                int updateCount = cameraMapper.updateByPrimaryKeySelective(camera);
+                if (updateCount > 0) {
+                    TbCamera tbCamera = cameraMapper.selectByPrimaryKey(camera.getId());
+                    removeRedisCamera(tbCamera);
+                }
+            }
+        }
     }
 }

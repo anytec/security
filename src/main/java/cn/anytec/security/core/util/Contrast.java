@@ -1,7 +1,7 @@
 package cn.anytec.security.core.util;
 
-import cn.anytec.security.config.GeneralConfig;
 import cn.anytec.security.core.enums.SecurityExceptionEnum;
+import cn.anytec.security.core.enums.UserRole;
 import cn.anytec.security.core.exception.BussinessException;
 import org.apache.commons.lang3.StringUtils;
 
@@ -122,11 +122,10 @@ public class Contrast {
      * @return
      */
     public static String parseRole(int role) {
-        GeneralConfig config = ApplicationContextHolder.getBean(GeneralConfig.class);
-        if (role == config.getUserRole()) {
-            return "用户";
-        }else if (role == config.getAdminRole()) {
-            return "管理员";
+        if (role == UserRole.USER.getRole()) {
+            return UserRole.USER.getMsg();
+        }else if (role == UserRole.ADMIN.getRole()) {
+            return UserRole.ADMIN.getMsg();
         }
         return "";
     }

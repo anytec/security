@@ -40,6 +40,7 @@ snapSdk:
   emotionsOpen: true
   genderOpen: true
   ageOpen: true
+  identifySnapThreshold: 0.7
 staticSdk:
   hostIp: 192.168.10.212
   port: 8000
@@ -49,22 +50,12 @@ staticSdk:
   warningThreshold: 0.7
   staticGallery: 179Static
 
-redisKeys:
-  cameraBySdkId: getCameraBySdkId
-  cameraGroupById: getCameraGroupById
-  peronBySdkId: getPersonBySdkId
-  personGroupById: getPersonGroupById
-  personCounting: personCounting
-  warningThreshold: warningThrehsold
-  captureCameras: captureCameras
-  captureCamerasInUse: captureCamerasInUse
 # mongodb
 mongo:
   host: 127.0.0.1
   databaseNames: security
   snapshotCollection: snapshot
   warningFaceCollection: warning_face
-
 
 constant:
   camera: ${staticSdk.url}/${staticSdk.version}/camera
@@ -73,14 +64,6 @@ constant:
 camera:
   allProcess: stream-active
   rtmpPrefix: rtmp://192.168.10.158:1936/myapp/
-
-
-password:
-  salt: zhaosdafaqj23ou89ZXcj@#$@#$#@KJdjklj;D../dSF.,
-role:
-  user: 0
-  admin: 1
-
 
 # info 配置项（/actuator/info）
 info:
