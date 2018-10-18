@@ -47,8 +47,8 @@ public class FFmpegStreamTask extends Thread {
             }catch (IOException e){
                 this.existValue=2;
             }
-            process.waitFor();
-            this.existValue = process.exitValue();
+            this.existValue=process.waitFor();
+//            this.existValue = process.exitValue();
             logger.info("exitVal:" + existValue);
 
 
@@ -66,19 +66,19 @@ public class FFmpegStreamTask extends Thread {
         return true;
     }
     //先判断线程是不是存在，再判断线程拉起的进程是不是存在
-    public boolean isActive(){
-        if(!super.isAlive()){
-            logger.warn("thread for cmd 【 {} 】is not active ", Arrays.toString(cmds));
-            return false;
-        }else if(null == process || !process.isAlive()){
-            logger.warn("process for cmd 【 {} 】 is not active ", Arrays.toString(cmds));
-            return false;
-        }else if(process.isAlive()) {
-            logger.info("thread and process for 【 {} 】 is not active ", Arrays.toString(cmds));
-            return true;
-        }
-        return false;
-    }
+//    public boolean isActive(){
+//        if(!super.isAlive()){
+//            logger.warn("thread for cmd 【 {} 】is not active ", Arrays.toString(cmds));
+//            return false;
+//        }else if(null == process || !process.isAlive()){
+//            logger.warn("process for cmd 【 {} 】 is not active ", Arrays.toString(cmds));
+//            return false;
+//        }else if(process.isAlive()) {
+//            logger.info("thread and process for 【 {} 】 is not active ", Arrays.toString(cmds));
+//            return true;
+//        }
+//        return false;
+//    }
 
     public Process getProcess() {
         return process;

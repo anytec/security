@@ -13,6 +13,8 @@ public class TbGroupPerson {
 
     private String voiceLabel;
 
+    private Integer warnningPush = 1;
+
     public Integer getId() {
         return id;
     }
@@ -59,5 +61,13 @@ public class TbGroupPerson {
 
     public void setVoiceLabel(String voiceLabel) {
         this.voiceLabel = voiceLabel == null ? null : voiceLabel.trim();
+    }
+
+    public Integer getWarnningPush() {
+        return warnningPush;
+    }
+
+    public void setWarnningPush(Integer warnningPush) {
+        this.warnningPush = warnningPush;
     }
 }

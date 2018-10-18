@@ -28,12 +28,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 
@@ -65,6 +70,34 @@ public class FRDataHandler {
     private IPCOperations ipcOperations;
 
     private String warningThreshold = RedisConst.WARNING_THRESHOLD;
+    private TimeModel receiveTimeModel;
+
+    public void setReceiveTimeModel(TimeModel receiveTimeModel) {
+        this.receiveTimeModel = receiveTimeModel;
+    }
+
+    @PostConstruct
+    private void initTimeModel(){
+        LocalDateTime localDateTime = LocalDateTime.now();
+        ZonedDateTime zonedDateTime= ZonedDateTime.of(localDateTime, ZoneId.systemDefault()).withZoneSameInstant(ZoneId.of("UTC"));
+        receiveTimeModel = new TimeModel(zonedDateTime.toLocalDateTime());
+    }
+
+    @Scheduled(fixedDelay = 5000)
+    public void sendSnapshotTimes() {
+        if(checkTime(receiveTimeModel)){
+            int hour = receiveTimeModel.getHour();
+            int minute = receiveTimeModel.getMinute();
+            long snapshot_start_timestamp = System.currentTimeMillis() - 1000 * 60 * (hour * 60 + minute);
+            long snapshotOfDay = mongoDBService.getNumberOfSnapshotByTime(snapshot_start_timestamp, null);
+            if (snapshotOfDay != -1) {
+                wsSendHandler.sendSnapshotOfDay(snapshotOfDay);
+            }
+            long warningOfWeek = getWarningTimes(receiveTimeModel);
+            String times = String.valueOf(new Long(warningOfWeek).intValue());
+            redisTemplate.opsForValue().set(RedisConst.WARNNING_TIMES_OF_WEEK,times);
+        }
+    }
 
     public void recieveSnap(String cameraSdkId, String timestamp, String bbox, MultipartFile photo) {
         TbCamera camera = cameraService.getCameraBySdkId(cameraSdkId);
@@ -72,8 +105,10 @@ public class FRDataHandler {
             LocalDateTime localDateTime = LocalDateTime.parse(timestamp);
             TimeModel timeModel = new TimeModel(localDateTime);
             if(checkTime(timeModel)){
+                this.receiveTimeModel = timeModel;
                 List<IdentifyFace> faceList = addFace(photo,cameraSdkId,bbox);
                 if (!CollectionUtils.isEmpty(faceList)) {
+                    logger.info("【addFace】图片入sdk库成功");
                     faceList.forEach(face -> {
                         handleSnapshot(face, timeModel, camera);
                         IdentifyPojo identifyPojo = identifyInStaticGallery(face.getThumbnail());
@@ -98,15 +133,15 @@ public class FRDataHandler {
         long nowTimestamp = System.currentTimeMillis();
         long timestamp = timeModel.getTimestamp();
         if(timestamp > nowTimestamp){
-            if((timestamp - nowTimestamp)/(1000*60) <30){
+            if((timestamp - nowTimestamp)/(1000*60) <15){
                 return true;
             }
-            logger.info("【receiveSnap】快照传入时间{},大于当前时间30分钟，快照不录入",timeModel.getCatchTime());
+            logger.info("【receiveSnap】快照传入时间{},大于当前时间15分钟，快照不录入",timeModel.getCatchTime());
         }else if(timestamp <= nowTimestamp){
-            if((nowTimestamp - timestamp)/(1000*60) <30){
+            if((nowTimestamp - timestamp)/(1000*60) <15){
                 return true;
             }
-            logger.info("【receiveSnap】快照传入时间{},小于当前时间30分钟，快照不录入",timeModel.getCatchTime());
+            logger.info("【receiveSnap】快照传入时间{},小于当前时间15分钟，快照不录入",timeModel.getCatchTime());
         }
         return false;
     }
@@ -139,7 +174,7 @@ public class FRDataHandler {
     //快照处理
     public void handleSnapshot(IdentifyFace face, TimeModel timeModel, TbCamera camera) {
         String catchTime = timeModel.getCatchTime();
-        logger.info("快照获取：" + catchTime);
+        logger.info("【快照处理】快照的获取时间：" + catchTime);
         //快照推送
         FdSnapShot snapShot = new FdSnapShot();
         List<String> emotions = face.getEmotions();
@@ -160,16 +195,8 @@ public class FRDataHandler {
             snapshotAddition.put("secondEmotion",emotions.get(1));
         }
         snapshotAddition.put("timestamp", timeModel.getTimestamp());
-        String day =timeModel.getCatchTime().split(" ")[0];
-        snapshotAddition.put("day",day);
-        String time = timeModel.getCatchTime().split(" ")[1];
-        Integer timeRange = getTimeRange(time);
-        if(timeRange != null){
-            snapshotAddition.put("timeRange",timeRange);
-        }
+        snapshotAddition.put("date",timeModel.getDate());
         mongoDBService.addSnapShot(JSONObject.toJSONString(snapShot), snapshotAddition);
-        //今日抓拍数推送
-        sendSnapshotTimes(timeModel);
     }
 
     public Map<String, Object> insertCameraData(TbCamera camera) {
@@ -199,46 +226,7 @@ public class FRDataHandler {
         return locationList.get(i);
     }
 
-    private Integer getTimeRange(String time){
-        Integer timeOclock = Integer.parseInt(time.split(":")[0]);
-        if(timeOclock <2){
-            return 1;
-        }else if(timeOclock >= 2 && timeOclock < 4 ){
-            return 2;
-        }else if(timeOclock >= 4 && timeOclock < 6 ){
-            return 3;
-        }else if(timeOclock >= 6 && timeOclock < 8 ){
-            return 4;
-        }else if(timeOclock >= 8 && timeOclock < 10 ){
-            return 5;
-        }else if(timeOclock >= 10 && timeOclock < 12 ){
-            return 6;
-        }else if(timeOclock >= 12 && timeOclock < 14 ){
-            return 7;
-        }else if(timeOclock >= 14 && timeOclock < 16 ){
-            return 8;
-        }else if(timeOclock >= 16 && timeOclock < 18 ){
-            return 9;
-        }else if(timeOclock >= 18 && timeOclock < 20 ){
-            return 10;
-        }else if(timeOclock >= 20 && timeOclock < 22 ){
-            return 11;
-        }else if(timeOclock >= 22 && timeOclock < 24 ){
-            return 12;
-        }
-        return null;
-    }
 
-    //推送今日抓拍快照次数
-    public void sendSnapshotTimes(TimeModel timeModel) {
-        int hour = timeModel.getHour();
-        int minute = timeModel.getMinute();
-        long snapshot_start_timestamp = System.currentTimeMillis() - 1000 * 60 * (hour * 60 + minute);
-        long snapshotOfDay = mongoDBService.getNumberOfSnapshotByTime(snapshot_start_timestamp, null);
-        if (snapshotOfDay != -1) {
-            wsSendHandler.sendSnapshotOfDay(snapshotOfDay);
-        }
-    }
 
     //在静态库中identify
     public IdentifyPojo identifyInStaticGallery(String faceUrl) {
@@ -270,19 +258,25 @@ public class FRDataHandler {
                 warning.setConfidence(matchFace.getConfidence());
                 warning.setCatchTime(timeModel.getCatchTime());
                 insertCameraData(warning, camera);
-                insertPersonData(warning, matchFace);
-                //本周报警次数
-                long warningOfWeek = getWarningTimes(timeModel);
-                warning.setWarningOfWeek(new Long(warningOfWeek).intValue());
-                wsSendHandler.sendWarning(warning);
-                logger.info("预警记录存入mongo");
-                Map<String, Object> warningMap = new HashMap<>();
-                warningMap.put("timestamp", timeModel.getTimestamp());
-                warningMap.put("faceSdkId", matchFace.getFace().getId());
-                String age = face.getAge().toString().split("\\.")[0];
-                warningMap.put("age",age);
-                warningMap.put("emotions",face.getEmotions());
-                mongoDBService.addWarningFace(JSONObject.toJSONString(warning), warningMap);
+                try {
+                    boolean warnningPush = handlePersonData(warning, matchFace);
+                    //本周报警次数
+                    Integer warnningOfWeek = Integer.parseInt(redisTemplate.opsForValue().get(RedisConst.WARNNING_TIMES_OF_WEEK).toString());
+                    warning.setWarningOfWeek(warnningOfWeek);
+                    if(warnningPush){
+                        wsSendHandler.sendWarning(warning);
+                    }
+                    logger.info("预警记录存入mongo");
+                    Map<String, Object> warningMap = new HashMap<>();
+                    warningMap.put("timestamp", timeModel.getTimestamp());
+                    warningMap.put("faceSdkId", matchFace.getFace().getId());
+                    String age = face.getAge().toString().split("\\.")[0];
+                    warningMap.put("age",age);
+                    warningMap.put("emotions",face.getEmotions());
+                    mongoDBService.addWarningFace(JSONObject.toJSONString(warning), warningMap);
+                }catch (BussinessException e){
+
+                }
             }
         });
     }
@@ -292,9 +286,9 @@ public class FRDataHandler {
         int dayOfWeek = timeModel.getDayOfWeek();
         int hour = timeModel.getHour();
         int minute = timeModel.getMinute();
-        long warning_start_timestamp = System.currentTimeMillis() - 1000 * 60 * ((dayOfWeek - 1) * 24 * 60 + hour * 60 + minute);
-        long warningOfWeek = mongoDBService.getNumberOfWarningByTime(warning_start_timestamp, null);
-        return warningOfWeek;
+        long warnning_start_timestamp = System.currentTimeMillis() - 1000 * 60 * ((dayOfWeek - 1) * 24 * 60 + hour * 60 + minute);
+        long warnningOfWeek = mongoDBService.getNumberOfWarningByTime(warnning_start_timestamp, null);
+        return warnningOfWeek;
     }
 
     public void insertCameraData(FrWarning warning, TbCamera camera) {
@@ -302,16 +296,21 @@ public class FRDataHandler {
         warning.setCameraGroupId(camera.getGroupId());
         warning.setCameraSdkId(camera.getSdkId());
         warning.setCameraName(camera.getName());
-        TbGroupCamera cameraGroup = groupCameraService.getGroupCameraById(camera.getId().toString());
+        TbGroupCamera cameraGroup = groupCameraService.getGroupCameraById(camera.getGroupId().toString());
         if(cameraGroup != null){
             warning.setCameraGroupName(cameraGroup.getName());
+        }else {
+            logger.warn("{}获取设备组信息失败",camera.getName());
         }
     }
 
-    public void insertPersonData(FrWarning warning, MatchFace face) {
+    //
+    public boolean handlePersonData(FrWarning warning, MatchFace face) {
+        boolean warnningPush = true;
         warning.setAge(face.getFace().getAge().intValue());
         warning.setEmotions(face.getFace().getEmotions());
-        TbPerson person = personService.getPersonBySdkId(face.getFace().getId()).getData();
+        String faceSdkId = face.getFace().getId();
+        TbPerson person = personService.getPersonBySdkId(faceSdkId).getData();
         if (person != null) {
             warning.setPersonName(person.getName());
             warning.setGender(person.getGender());
@@ -323,8 +322,15 @@ public class FRDataHandler {
                 warning.setColorLabel(personGroup.getColorLabel());
                 warning.setPersonGroupName(personGroup.getName());
                 warning.setVoiceLabel(personGroup.getVoiceLabel());
+                if(personGroup.getWarnningPush() == 0){
+                    warnningPush = false;
+                }
             }
+        }else {
+            logger.error("库中未录入person,faceSdkId: " + faceSdkId);
+            throw new BussinessException(1,"库中未录入person,faceSdkId:{}",faceSdkId);
         }
+        return warnningPush;
     }
 
     //在动态库中搜索快照
@@ -338,8 +344,9 @@ public class FRDataHandler {
                 result = mongoDBService.identifySnap(sdkMap, idenfitySnapParam);
             }
             return ServerResponse.createBySuccess(result);
+        }else {
+            return ServerResponse.createByErrorMessage("图片检测异常或未检测到人脸");
         }
-        return ServerResponse.createByError();
     }
 
     public FindFaceParam getFindFaceParam(IdenfitySnapParam param){

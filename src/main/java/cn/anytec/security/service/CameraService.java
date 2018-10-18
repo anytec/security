@@ -25,6 +25,8 @@ public interface CameraService {
     /**查询camera列表*/
     List<TbCamera> list(int pageNum, int pageSize, String name, Integer groupId, String type, String serverLabel, Integer status, String cameraSdkId);
 
+    List<TbCamera>allList();
+
     CameraDTO cameraConvertToCameraDTO(TbCamera camera);
 
     /**更新camera*/

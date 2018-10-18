@@ -16,4 +16,5 @@ public interface RedisConst {
     String CAPTURECAMERAS = "captureCameras";
     String CAPTURECAMERAS_INUSE = "captureCamerasInUse";
     String CAPTURECAMERAS_OFFLINE = "captureCamerasOffline";
+    String WARNNING_TIMES_OF_WEEK = "warnningTimesOfWeek";
 }

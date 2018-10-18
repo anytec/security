@@ -52,6 +52,9 @@ public class UDPServerHandler extends SimpleChannelInboundHandler<DatagramPacket
             channelHandlerContext.writeAndFlush(
                     new DatagramPacket(Unpooled.copiedBuffer("accepted",
                             CharsetUtil.UTF_8), datagramPacket.sender()));
+            channelHandlerContext.writeAndFlush(
+                    new DatagramPacket(Unpooled.copiedBuffer("accepted",
+                            CharsetUtil.UTF_8), datagramPacket.sender()));
             logger.info("【抓拍机accepted】macAddress:{}",macAddress);
             //判断抓拍机是否在mysql库中
             TbCamera camera = cameraService.getCameraBySdkId(macAddress);
