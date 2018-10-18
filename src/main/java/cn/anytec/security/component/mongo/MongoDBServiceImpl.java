@@ -4,17 +4,18 @@ import cn.anytec.security.config.GeneralConfig;
 import cn.anytec.security.constant.RedisConst;
 import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.model.TbGroupCamera;
-import cn.anytec.security.model.TbGroupPerson;
 import cn.anytec.security.model.parammodel.IdenfitySnapParam;
 import cn.anytec.security.service.CameraService;
 import cn.anytec.security.service.GroupCameraService;
 import cn.anytec.security.service.GroupPersonService;
+import cn.anytec.security.util.DateTimeUtil;
+import cn.anytec.security.util.SearchUtil;
 import com.alibaba.fastjson.JSONObject;
-import com.mongodb.*;
-import com.mongodb.client.AggregateIterable;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.client.*;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.slf4j.Logger;
@@ -23,12 +24,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
+
 import javax.annotation.PostConstruct;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+
 
 @Service
 public class MongoDBServiceImpl implements MongoDBService {
@@ -74,6 +78,8 @@ public class MongoDBServiceImpl implements MongoDBService {
         database = mongoClient.getDatabase(databaseName);
         snapshotCollection = database.getCollection(configSnapshot);
         warningFaceCollection = database.getCollection(configWarning_face);
+        java.util.logging.Logger.getLogger("org.mongodb.driver").setLevel(java.util.logging.Level.INFO);
+
     }
     //快照入库
     @Override
@@ -329,8 +335,159 @@ public class MongoDBServiceImpl implements MongoDBService {
         return result;
     }
 
+    private Document getMatchForParam(Map<String, String[]> paramMap) {
+        Document sub_match = new Document();
+
+        if (paramMap.containsKey("cameraSdkIds")){
+            String[] cameraSdkIds = paramMap.get("cameraSdkIds");
+            sub_match.put("cameraSdkId", new Document("$in", Arrays.asList(cameraSdkIds)));
+        }
+        if (paramMap.containsKey("cameraGroupIds")){
+            String[] cameraGroupIds = paramMap.get("cameraGroupIds");
+            sub_match.put("cameraGroupId", new Document("$in", Arrays.asList(cameraGroupIds)));
+        }
+        return sub_match;
+    }
+
+    public JSONObject peopleCountingV2(Map<String, String[]> paramMap) {
+
+        String format = "yyyy-MM-dd'T'HH:mm:ss'Z'";
+        final int past = 7;
+
+        Document sub_match = getMatchForParam(paramMap);
+        Date[] daysAgoAndToday = DateTimeUtil.getDaysAgoAndToday(paramMap, past, format);
+        Date daysAgo = daysAgoAndToday[0];
+        Date today = daysAgoAndToday[1];
+        sub_match.put("catchTime", new Document("$gte", daysAgo)
+                .append("$lte", today));
+
+        Document sub_group = new Document();
+        sub_group.put("_id", "$cameraSdkId");
+        sub_group.put("count", new Document("$sum", 1));
+        sub_group.put("cameraName", new Document("$first", "$cameraName"));
+        sub_group.put("timestamp", new Document("$push", "$timestamp"));
+
+        Document match = new Document("$match", sub_match);
+        Document group = new Document("$group", sub_group);
+        Document sort = new Document("$sort", new Document("_id", 1).append("cameraName", 1));
+
+        ArrayList<Document> aggregateList = new ArrayList<>();
+        aggregateList.add(match);
+        aggregateList.add(group);
+        aggregateList.add(sort);
+
+        AggregateIterable<Document> aggregate = snapshotCollection.aggregate(aggregateList);
+
+        ArrayList<Map<String, Map<String, Object>>> ret = new ArrayList<>();
+
+        try (MongoCursor<Document> iterator = aggregate.iterator()) {
+            while (iterator.hasNext()) {
+                Document item = iterator.next();
+
+                HashMap<String, Map<String, Object>> keyMap = new HashMap<>();
+                HashMap<String, Object> valueMap = new HashMap<>();
+                List<Long> timestampList = null;
+                try {
+                    timestampList = item.get("timestamp", List.class);
+                } catch (Exception e) {
+                    logger.error(e.getMessage());
+                    throw new SecurityException("获取时间参数异常.");
+                }
+
+
+                String cameraName = item.getString("cameraName");
+//                String cameraSdkId = item.getString("_id");
+                if (null == cameraName) {
+                    continue;
+                }
+
+                int[] arrCountIndex = new int[past * 12];
+
+                List<Long> timestamps = DateTimeUtil.generateTimestamp(past, today);
+
+                // oldIndex 为timestampList上一次for循环的索引位置.
+                int index, oldIndex = 0;
+                Assert.notEmpty(timestampList, "未成功获取统计参数.");
+                for (int i = 1; i < timestamps.size(); i++) {
+
+                    int indexOf = timestampList.indexOf(timestamps.get(i));
+                    // 精确查找
+                    if (indexOf != -1) {
+                        index = indexOf;
+                        // 模糊查询
+                    } else {
+                        // 找出无限接近于(或者等于)某一天的(0:00/2:00/4:00/6:00...22:00)的时间戳的抓拍记录
+                        index = SearchUtil.searchKey(timestampList, timestamps.get(i), true);
+                        /*if (index <= 0) {
+                        }*/
+
+                        // 如果接近值查找拿到的最接近23:59:59的时间戳是00:00:00.而不是23:59:58, 通过判断进行纠错.
+                        if (timestampList.get(index) >= timestamps.get(i)) {
+                            continue;
+                        }
+
+                        /*
+                         * 容错率==10, 避免同一时间段推送多条数据.二分查找拿到第一条数据就返回,如后续还有相等数据.此位置用于纠错
+                         * 不要调太大. 计算量次数等于    N(设备数量) * past(天) * 12 * 10
+                         */
+                        for (int j = 1; j <= 10; j++) {
+                            if (index < timestampList.size() - 1) {
+                                if (!timestampList.get(index + 1).equals(timestampList.get(index))) {
+                                    break;
+                                }
+                                index += 1;
+                            }
+                        }
+                    }
+
+                    label3:
+                    for (int j = oldIndex; j <= index; j++) {
+
+                        SimpleDateFormat hhSdf = new SimpleDateFormat("HH");
+                        Integer hours = Integer.valueOf(hhSdf.format(new Date(timestampList.get(j))));
+
+                        // 当天数据各个时间段的分布
+                        int arrIndex;
+                        if (hours % 2 == 0) {
+                            arrIndex = hours / 2;
+                        } else {
+                            arrIndex = (hours - 1) / 2;
+                        }
+                        arrCountIndex[arrIndex + (12 * (i - 1))] += 1;
+                    }
+                    if (index >= timestampList.size() - 1) {
+                        break;
+                    }
+                    // 下一次 label3 循环从本次已经筛选过的时间点的后一个timeList开始.
+                    oldIndex = index + 1;
+                }
+
+                valueMap.put("count", item.getInteger("count", 0));
+                valueMap.put("countIndex", arrCountIndex);
+
+                keyMap.put(cameraName, valueMap);
+                ret.add(keyMap);
+            }
+        }
+        // 汇总功能
+        JSONObject strings = DateTimeUtil.countTime(daysAgo, today, past, ret);
+
+        return strings;
+    }
+
 
     public JSONObject peopleCounting(Map<String, String[]> paramMap) {
+
+        JSONObject maps = null;
+        try {
+            maps = peopleCountingV2(paramMap);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        }
+        if (maps != null) {
+            return maps;
+        }
+
         Map<String, Map<String, List<BasicDBObject>>> dayCameraTimeMap = getDayCameraTimeMap(paramMap);
         JSONObject result = new JSONObject();
         dayCameraTimeMap.forEach((day, value) -> {
@@ -490,10 +647,137 @@ public class MongoDBServiceImpl implements MongoDBService {
     }
 
     public JSONObject peopleAnalysis(Map<String, String[]> paramMap) {
+
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = peopleAnalysisV2(paramMap);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        }
+        if (jsonObject != null) {
+            return jsonObject;
+        }
+
         JSONObject result = new JSONObject();
         result.put("age",getAgeAnalysis(paramMap));
         result.put("gender",getGenderAnalysis(paramMap));
         result.put("emotions",getEmotionAnalysis(paramMap));
+        return result;
+    }
+
+    private JSONObject peopleAnalysisV2(Map<String, String[]> paramMap) {
+
+        Document sub_match = getMatchForParam(paramMap);
+
+        String[] startTimes, endTimes;
+        if (paramMap.containsKey("startTime") && paramMap.containsKey("endTime")) {
+            startTimes = paramMap.get("startTime");
+            endTimes = paramMap.get("endTime");
+            long startTime, endTime;
+            // 默认取前台传的时间区间
+            if (startTimes.length == 1 && endTimes.length == 1) {
+                startTime = Long.valueOf(startTimes[0]);
+                endTime = Long.valueOf(endTimes[0]);
+                sub_match.put("catchTime", new Document("$gte", new Date(startTime))
+                        .append("$lte", new Date(endTime)));
+            }
+        }
+
+        Document sub_group = new Document();
+        sub_group.put("_id", new Document("gender", "$gender").append("age", "$age").append("emotions", "$emotions"));
+        sub_group.put("count", new Document("$sum", 1));
+
+        Document sub_project = new Document();
+        sub_project.put("_id", 0);
+        sub_project.put("count", 1);
+        sub_project.put("age", "$_id.age");
+        sub_project.put("gender", "$_id.gender");
+        sub_project.put("emotions", "$_id.emotions");
+
+
+        Document match = new Document("$match", sub_match);
+        Document group = new Document("$group", sub_group);
+        Document sort = new Document("$sort", new Document("age", 1));
+        Document project = new Document("$project", sub_project);
+
+        ArrayList<Document> aggregateList = new ArrayList<>();
+        aggregateList.add(match);
+        aggregateList.add(group);
+        aggregateList.add(sort);
+        aggregateList.add(project);
+
+        AggregateIterable<Document> aggregate = snapshotCollection.aggregate(aggregateList);
+
+        Map<String,List<Integer>> ageMap = new HashMap<>();
+        // 年龄段
+        Integer[] generation = {0,15,36,61,91};
+        // 情绪
+        String[] emotionList = {"neutral","sad","happy","surprise","fear","angry","disgust"};
+
+        // 结构化年龄汇总信息
+        int[][] ages = new int[4][3];
+        // 结构化性别汇总信息  1--男, 0--女
+        int[] genders = new int[2];
+        // 结构化情绪汇总信息
+        int[][] emotions = new int[7][2];
+
+        for (Document item : aggregate) {
+
+            Integer age = item.getInteger("age");
+            String gender = item.getString("gender");
+            ArrayList emotionArr = item.get("emotions", ArrayList.class);
+            Integer count = item.getInteger("count");
+
+            // 通过循环年龄段,构建年龄和性别
+            for (int j = 0; j < generation.length; j++) {
+                if (generation[j] <= age && age < generation[j + 1]) {
+                    if ("male".equals(gender)) {
+                        ages[j][1] += count;
+                        genders[1] += count;
+                    }else {
+                        ages[j][0] += count;
+                        genders[0] += count;
+                    }
+                    ages[j][2] += count;
+                }
+            }
+            // 通过循环情绪,构建情绪信息
+            for (int i = 0; i < emotionList.length; i++) {
+
+                Assert.isTrue(emotionArr.size() == 2, "超出情绪总数(显性情绪和隐性情绪)");
+                for (int j = 0; j < emotionArr.size(); j++) {
+                    if (emotionList[i].equals(emotionArr.get(j))) {
+                        emotions[i][j] += count;
+                    }else if (emotionList[i].equals(emotionArr.get(j))){
+                        emotions[i][j] += count;
+                    }
+                }
+            }
+        }
+
+        // 构建返回数据
+        JSONObject result = new JSONObject();
+        HashMap<String, int[]> ageHashMap = new HashMap<>();
+        for (int i = 0; i < generation.length - 1; i++) {
+            String key = generation[i] + " ~ " + (generation[i + 1] - 1);
+            ageHashMap.put(key, ages[i]);
+        }
+        result.put("age", ageHashMap);
+        HashMap<String, Integer> genderHashMap = new HashMap<>();
+        genderHashMap.put("female", genders[0]);
+        genderHashMap.put("male", genders[1]);
+        result.put("gender", genderHashMap);
+        HashMap<String, String> emotionHashMap = new HashMap<>();
+        for (int i = 0; i < emotionList.length; i++) {
+            // TODO: 2018/10/16 此处前台遗留问题. 可以直接将显性情绪和隐性情绪存入数组中返回前台.
+            // eg: emotionHashMap.put(emotionList[i], emotions[i]);
+            StringBuilder value = new StringBuilder();
+            for (int j = 0; j < emotions[i].length; j++) {
+                value.append(",").append(emotions[i][j]);
+            }
+            emotionHashMap.put(emotionList[i], value.toString().substring(1));
+        }
+        result.put("emotions", emotionHashMap);
         return result;
     }
 
