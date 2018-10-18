@@ -17,6 +17,7 @@ public interface PersonService {
     ServerResponse update(PersonForm personForm);
     ServerResponse<PageInfo> list(int pageNum, int pageSize,TbPerson person);
     PersonDTO personConvertPersonDTO(TbPerson person);
+    List<PersonDTO> personListConvertPersonDTOList(List<TbPerson> personList);
     ServerResponse<TbPerson> getPersonBySdkId(String sdkId);
     List<String> uploadPhotos(MultipartFile[] files);
     ServerResponse addPhotos(List<String> photoPathList, String personGroupId, String personGroupName);

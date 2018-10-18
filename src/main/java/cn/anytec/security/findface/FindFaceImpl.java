@@ -68,16 +68,16 @@ public class FindFaceImpl implements FindFaceService {
             responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, String.class);
         }catch (Exception e){
             logger.error("Http异常："+e.getMessage());
-            throw new BussinessException(1,"请求发生错误");
+            throw new BussinessException(1,"【detect】请求发生错误");
         }
         int responseCode = responseEntity.getStatusCodeValue();
         String result = responseEntity.getBody();
-        logger.info("sdk detect :" + result);
+        logger.info("【detect】result:" + result);
         if (responseCode == 200) {
             //return JSONObject.parseObject(result, DetectPojo.class);
             return gson.fromJson(result,DetectPojo.class);
         }else {
-            throw new BussinessException(1,"请求发生错误");
+            throw new BussinessException(1,"【detect】请求发生错误");
         }
     }
 
@@ -106,7 +106,7 @@ public class FindFaceImpl implements FindFaceService {
             responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, String.class);
         }catch (Exception e){
             logger.error("Http异常："+e.getMessage());
-            throw new BussinessException(1,"请求发生错误");
+            throw new BussinessException(1,"【verify】请求发生错误");
         }
         int responseCode = responseEntity.getStatusCodeValue();
         String result = responseEntity.getBody();
@@ -115,7 +115,7 @@ public class FindFaceImpl implements FindFaceService {
             //return JSONObject.parseObject(result, VerifyPojo.class);
             return gson.fromJson(result,VerifyPojo.class);
         }
-        throw new BussinessException(1,"请求发生错误");
+        throw new BussinessException(1,"【verify】请求发生错误");
     }
 
     public IdentifyPojo imageIdentify(byte[] photo, FindFaceParam param) {
@@ -160,17 +160,17 @@ public class FindFaceImpl implements FindFaceService {
         try {
             responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, String.class);
         }catch (Exception e){
-            logger.error("Http异常："+e.getMessage());
-            throw new BussinessException(1,"图片未检测到人脸");
+            logger.warn("identify Http异常："+e.getMessage());
+            return null;
         }
         int responseCode = responseEntity.getStatusCodeValue();
         String result = responseEntity.getBody();
-        logger.info("sdk identify :" + result);
+        logger.info("【identify result】 :" + result);
         if (responseCode == 200) {
 //            return JSONObject.parseObject(result, IdentifyPojo.class);
             return gson.fromJson(result,IdentifyPojo.class);
         }else{
-            throw new BussinessException(responseCode,"请求发生错误");
+            throw new BussinessException(responseCode,"【identify】请求发生错误");
         }
     }
 
@@ -226,10 +226,12 @@ public class FindFaceImpl implements FindFaceService {
             if(responseCode == 200){
                 return gson.fromJson(reply,FacePojo.class);
             }else if(responseCode == 400){
-                throw new BussinessException(400,"图片未检测到人脸");
+                logger.warn("【addFace 400】result:{}",reply);
+                return null;
+//                throw new BussinessException(400,"图片未检测到人脸");
             }else {
-                logger.warn("addFace请求未正确响应：" + responseCode);
-                logger.warn(reply);
+                logger.warn("【addFace】请求未正确响应：" + responseCode);
+                logger.warn("【addFace】result:{}",reply);
                 throw new BussinessException(responseCode,"请求未正确响应：" + responseCode);
             }
         } catch (IOException e) {
@@ -320,13 +322,13 @@ public class FindFaceImpl implements FindFaceService {
                 return true;
             } else if (statusCode == 404) {
                 logger.info("sdk库中未找到对应face");
-                return true;
+                throw new BussinessException(404,"sdk库中未找到对应face");
             }
         } catch (Exception e) {
             logger.error(e.getMessage());
         }
         logger.info("删除sdk中的face失败");
-        return false;
+        throw new BussinessException(1,"删除sdk中的face失败");
     }
 
     /*@Override

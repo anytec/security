@@ -4,6 +4,8 @@ package cn.anytec.security.websocket;
 import cn.anytec.security.component.CameraStreamMonitor;
 import cn.anytec.security.model.TbCamera;
 import cn.anytec.security.service.CameraService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -14,6 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class WSHandler {
+
+    private static Logger logger = LoggerFactory.getLogger(WSHandler.class);
 
     @Value("${camera.allProcess}")
     private String allProcessLabel;
@@ -63,24 +67,28 @@ public class WSHandler {
     String registerCamera(String cameraId,String sessionId,boolean addFlag){
         String runInfo = null;
         TbCamera camera = cameraService.getCameraBySdkId(cameraId);
-        if(cameraId_sessionIdList_map.containsKey(cameraId)){
-            List<String> sessionIdList = cameraId_sessionIdList_map.get(cameraId);
-            if(!sessionIdList.contains(sessionId)){
+        if(camera.getCameraStatus() == 1){
+            if(cameraId_sessionIdList_map.containsKey(cameraId)){
+                List<String> sessionIdList = cameraId_sessionIdList_map.get(cameraId);
+                if(!sessionIdList.contains(sessionId)){
+                    sessionIdList.add(sessionId);
+                    runInfo = cameraStreamMonitor.createViewProcess(camera);
+                    if(runInfo != null && runInfo.equals("exist")){
+                        redisTemplate.opsForHash().increment(allProcessLabel,cameraId, 1);
+                    }
+                }
+//                runInfo = cameraStreamMonitor.createViewProcess(camera);
+            }else {
+                List<String> sessionIdList = new ArrayList<>();
                 sessionIdList.add(sessionId);
+                cameraId_sessionIdList_map.put(cameraId,sessionIdList);
                 runInfo = cameraStreamMonitor.createViewProcess(camera);
                 if(runInfo != null && runInfo.equals("exist")){
                     redisTemplate.opsForHash().increment(allProcessLabel,cameraId, 1);
                 }
             }
-            runInfo = cameraStreamMonitor.createViewProcess(camera);
         }else {
-            List<String> sessionIdList = new ArrayList<>();
-            sessionIdList.add(sessionId);
-            cameraId_sessionIdList_map.put(cameraId,sessionIdList);
-            runInfo = cameraStreamMonitor.createViewProcess(camera);
-            if(runInfo != null && runInfo.equals("exist")){
-                redisTemplate.opsForHash().increment(allProcessLabel,cameraId, 1);
-            }
+            logger.info("【regitsterCamera】camera:{} 是未激活状态",cameraId );
         }
         return runInfo;
     }

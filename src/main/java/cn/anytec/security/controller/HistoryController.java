@@ -51,7 +51,7 @@ public class HistoryController {
         LocalDateTime localDateTime = LocalDateTime.now();
         ZonedDateTime zonedDateTime= ZonedDateTime.of(localDateTime, ZoneId.systemDefault()).withZoneSameInstant(ZoneId.of("UTC"));
         TimeModel now = new TimeModel(zonedDateTime.toLocalDateTime());
-        frDataHandler.sendSnapshotTimes(now);
+        frDataHandler.setReceiveTimeModel(now);
         Long warningTimes = frDataHandler.getWarningTimes(now);
         result.put("warnTimes",warningTimes.intValue());
         return result;

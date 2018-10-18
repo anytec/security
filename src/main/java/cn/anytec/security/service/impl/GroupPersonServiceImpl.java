@@ -1,7 +1,6 @@
 package cn.anytec.security.service.impl;
 
 import cn.anytec.security.common.ServerResponse;
-import cn.anytec.security.config.GeneralConfig;
 import cn.anytec.security.constant.RedisConst;
 import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.dao.TbGroupPersonMapper;
@@ -15,6 +14,8 @@ import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.google.common.base.Splitter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -26,14 +27,15 @@ import java.util.concurrent.TimeUnit;
 
 @Service("GroupPersonService")
 public class GroupPersonServiceImpl implements GroupPersonService {
+
+    private final Logger logger = LoggerFactory.getLogger(GroupPersonServiceImpl.class);
+
     @Autowired
     private TbGroupPersonMapper groupPersonMapper;
     @Autowired
     private TbPersonMapper personMapper;
     @Autowired
     private RedisTemplate redisTemplate;
-    @Autowired
-    private GeneralConfig config;
 
     public TbGroupPerson getPersonGroupInfo(Integer personGroupId){
         TbGroupPerson personGroup = groupPersonMapper.selectByPrimaryKey(personGroupId);
@@ -59,6 +61,7 @@ public class GroupPersonServiceImpl implements GroupPersonService {
             c.andNameLike("%"+groupName.trim()+"%");
         }
         List<TbGroupPerson> personGroupList = groupPersonMapper.selectByExample(example);
+
         for(TbGroupPerson personGroup : personGroupList){
             getPersonGroupNum(personGroup);
         }
@@ -70,12 +73,16 @@ public class GroupPersonServiceImpl implements GroupPersonService {
         TbPersonExample example = new TbPersonExample();
         TbPersonExample.Criteria c = example.createCriteria();
         c.andGroupIdEqualTo(personGroup.getId());
-        List<TbPerson> personList = personMapper.selectByExample(example);
-        if(!CollectionUtils.isEmpty(personList)){
-            personGroup.setTotalNumber(personList.size());
-        }else {
-            personGroup.setTotalNumber(0);
-        }
+        Integer count = personMapper.countByExample(example);
+        personGroup.setTotalNumber(count);
+    }
+
+    @Override
+    public List<TbGroupPerson> allList() {
+        TbGroupPersonExample example = new TbGroupPersonExample();
+        TbGroupPersonExample.Criteria c = example.createCriteria();
+        List<TbGroupPerson> personGroupList = groupPersonMapper.selectByExample(example);
+        return personGroupList;
     }
 
     public ServerResponse delete(String groupPersonIds){
@@ -87,14 +94,15 @@ public class GroupPersonServiceImpl implements GroupPersonService {
                 personC.andGroupIdEqualTo(Integer.parseInt(personGroupId));
                 List<TbPerson> personList = personMapper.selectByExample(personExample);
                 if(personList.size()>0){
-                    TbPerson person = personList.get(0);
-                    String groupName = person.getGroupName();
-                    return ServerResponse.createByErrorMessage("底库还有底库成员,不能删除底库组: "+groupName);
+                    return ServerResponse.createByErrorMessage("底库还有底库成员,不能删除底库组");
                 }
                 TbGroupPersonExample example = new TbGroupPersonExample();
                 TbGroupPersonExample.Criteria c = example.createCriteria();
                 c.andIdEqualTo(Integer.parseInt(personGroupId));
                 groupPersonMapper.deleteByExample(example);
+                logger.info("【deleteMysqlPersonGroup】{}",personGroupId);
+
+                deleteRedisPersonGroup(personGroupId);
             }
         }
         return ServerResponse.createBySuccess();
@@ -104,17 +112,17 @@ public class GroupPersonServiceImpl implements GroupPersonService {
         int updateCount = groupPersonMapper.updateByPrimaryKeySelective(groupPerson);
         if (updateCount > 0) {
             TbGroupPerson personGroup = groupPersonMapper.selectByPrimaryKey(groupPerson.getId());
-            removeRedisPersonGroup(personGroup);
+            deleteRedisPersonGroup(personGroup.getId().toString());
             return ServerResponse.createBySuccess("更新groupPerson信息成功", groupPerson);
         }
         return ServerResponse.createByErrorMessage("更新groupPerson信息失败");
     }
 
-    private void removeRedisPersonGroup(TbGroupPerson personGroup){
+    private void deleteRedisPersonGroup(String personGroupId){
         String redisKey = RedisConst.PERSONGROUP_BY_ID;
-        String personGroupId = personGroup.getId().toString();
         if (redisTemplate.opsForHash().hasKey(redisKey, personGroupId)) {
             redisTemplate.opsForHash().delete(redisKey,personGroupId);
+            logger.info("【deleteRedisPersonGroup】{}",personGroupId);
         }
     }
 

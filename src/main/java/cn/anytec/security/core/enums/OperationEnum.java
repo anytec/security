@@ -14,7 +14,7 @@ public class OperationEnum {
         put("camera", "设备管理");
         put("data", "数据查询");
         put("groupCamera", "设备组管理");
-        put("groupPerson", "人员底库管理");
+        put("groupPerson", "底库管理");
         put("history", "历史查询");
         put("person", "人员管理");
     }};
