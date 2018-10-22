@@ -94,6 +94,9 @@ public class PersonServiceImpl implements PersonService {
         if(facePojo != null){
             TbPerson person = parsePersonDTO(personForm, facePojo);
             if (addMySqlFace(person)) {
+                if(redisTemplate.opsForHash().hasKey(RedisConst.PERSON_GROUP_NUM_BY_GROUPID,person.getGroupId().toString())){
+                    redisTemplate.opsForHash().delete(RedisConst.PERSON_GROUP_NUM_BY_GROUPID,person.getGroupId().toString());
+                }
                 return ServerResponse.createBySuccess("添加person成功", person);
             }
         }else {
@@ -142,6 +145,7 @@ public class PersonServiceImpl implements PersonService {
             }
         }
         if(result){
+            redisTemplate.delete(RedisConst.PERSON_GROUP_NUM_BY_GROUPID);
             return ServerResponse.createBySuccess();
         }else {
             return ServerResponse.createByError();
@@ -243,7 +247,7 @@ public class PersonServiceImpl implements PersonService {
         if (!StringUtils.isEmpty(person.getSdkId())) {
             c.andSdkIdEqualTo(person.getSdkId());
         }
-        example.setOrderByClause("enroll_time desc");
+        example.setOrderByClause("id desc");
         List<TbPerson> personList = personMapper.selectByExample(example);
         PageInfo pageResult = new PageInfo(personList);
         List<PersonDTO> personDTOList = personList.stream()
@@ -417,6 +421,7 @@ public class PersonServiceImpl implements PersonService {
                     }
                 }
             }
+            redisTemplate.delete(RedisConst.PERSON_GROUP_NUM_BY_GROUPID);
         }
         if(!StringUtils.isEmpty(msg)){
             return ServerResponse.createBySuccessMessage("上传不成功的照片： "+msg);

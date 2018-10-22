@@ -339,12 +339,18 @@ public class MongoDBServiceImpl implements MongoDBService {
         Document sub_match = new Document();
 
         if (paramMap.containsKey("cameraSdkIds")){
-            String[] cameraSdkIds = paramMap.get("cameraSdkIds");
+            String cameraSdkIdStr = paramMap.get("cameraSdkIds")[0];
+            String[] cameraSdkIds = cameraSdkIdStr.split(",");
             sub_match.put("cameraSdkId", new Document("$in", Arrays.asList(cameraSdkIds)));
         }
         if (paramMap.containsKey("cameraGroupIds")){
-            String[] cameraGroupIds = paramMap.get("cameraGroupIds");
-            sub_match.put("cameraGroupId", new Document("$in", Arrays.asList(cameraGroupIds)));
+            String cameraGroupIdStr = paramMap.get("cameraGroupIds")[0];
+            String[] cameraGroupIds = cameraGroupIdStr.split(",");
+            List<Integer> cameraGroupIdList = new ArrayList<>();
+            for(String cameraGroupId : cameraGroupIds){
+                cameraGroupIdList.add(Integer.parseInt(cameraGroupId));
+            }
+            sub_match.put("cameraGroupId", new Document("$in", cameraGroupIdList));
         }
         return sub_match;
     }
@@ -358,7 +364,7 @@ public class MongoDBServiceImpl implements MongoDBService {
         Date[] daysAgoAndToday = DateTimeUtil.getDaysAgoAndToday(paramMap, past, format);
         Date daysAgo = daysAgoAndToday[0];
         Date today = daysAgoAndToday[1];
-        sub_match.put("catchTime", new Document("$gte", daysAgo)
+        sub_match.put("date", new Document("$gte", daysAgo)
                 .append("$lte", today));
 
         Document sub_group = new Document();
@@ -380,8 +386,19 @@ public class MongoDBServiceImpl implements MongoDBService {
 
         ArrayList<Map<String, Map<String, Object>>> ret = new ArrayList<>();
 
+        boolean flag = false;
+        if(!sub_match.containsKey("cameraSdkId")&&!sub_match.containsKey("cameraGroupIds")){
+            flag= true;
+        }
         try (MongoCursor<Document> iterator = aggregate.iterator()) {
+            Integer count = 0;
             while (iterator.hasNext()) {
+                if(flag){
+                    if(count >4){
+                        break;
+                    }
+                    count++;
+                }
                 Document item = iterator.next();
 
                 HashMap<String, Map<String, Object>> keyMap = new HashMap<>();
@@ -491,9 +508,9 @@ public class MongoDBServiceImpl implements MongoDBService {
         Map<String, Map<String, List<BasicDBObject>>> dayCameraTimeMap = getDayCameraTimeMap(paramMap);
         JSONObject result = new JSONObject();
         dayCameraTimeMap.forEach((day, value) -> {
-            List<JSONObject> dayCameraCountList = new ArrayList<>();
+            Map<String,List<Integer>> cameraCountMap = new HashMap<>();
             value.forEach((cameraName, timeDbObjectList) -> {
-                List<String> countList = new ArrayList<>();
+                List<Integer> countList = new ArrayList<>();
                 String key = "";
                 if(paramMap.containsKey("cameraGroupIds")){
                     key = day+",camGroup:"+cameraName;
@@ -502,27 +519,30 @@ public class MongoDBServiceImpl implements MongoDBService {
                 }
                 if (redisTemplate.opsForHash().hasKey(personCounting, key)) {
                     String countStr =  redisTemplate.opsForHash().get(personCounting, key).toString();
-                    countList = Arrays.asList(countStr.split(","));
+                    String[] counts = countStr.split(",");
+                    for(String count : counts){
+                        countList.add(Integer.parseInt(count));
+                    }
                 }else {
-                    countList.add("0");
+                    String countStr = "0,";
+                    countList.add(0);
                     Integer total = 0;
                     for (BasicDBObject timeDbObject : timeDbObjectList) {
                         Integer count = Integer.parseInt(snapshotCollection.count(timeDbObject) + "");
-                        countList.add(count+"");
+                        countList.add(count);
+                        countStr += count+",";
                         total += count;
                     }
-                    countList.add(total+"");
-                    String countStr = String.join(",",countList);
+                    countList.add(total);
+                    countStr += total+"";
                     if(!day.equals(getToday())){
                         redisTemplate.opsForHash().put(personCounting, key, countStr);
                         redisTemplate.expire(personCounting, 1, TimeUnit.DAYS);
                     }
                 }
-                JSONObject cameraCountList = new JSONObject();
-                cameraCountList.put(cameraName, countList);
-                dayCameraCountList.add(cameraCountList);
+                cameraCountMap.put(cameraName, countList);
             });
-            result.put(day, dayCameraCountList);
+            result.put(day, cameraCountMap);
         });
         return result;
     }
@@ -678,7 +698,7 @@ public class MongoDBServiceImpl implements MongoDBService {
             if (startTimes.length == 1 && endTimes.length == 1) {
                 startTime = Long.valueOf(startTimes[0]);
                 endTime = Long.valueOf(endTimes[0]);
-                sub_match.put("catchTime", new Document("$gte", new Date(startTime))
+                sub_match.put("date", new Document("$gte", new Date(startTime))
                         .append("$lte", new Date(endTime)));
             }
         }

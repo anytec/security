@@ -114,6 +114,7 @@ public class FindFaceImpl implements FindFaceService {
         if (responseCode == 200) {
             //return JSONObject.parseObject(result, VerifyPojo.class);
             return gson.fromJson(result,VerifyPojo.class);
+
         }
         throw new BussinessException(1,"【verify】请求发生错误");
     }
@@ -135,8 +136,8 @@ public class FindFaceImpl implements FindFaceService {
             }
         }
         String identifyUri = "";
-        if (param.getFaceInfo() != null) {
-            requestParams.add("bbox", param.getFaceInfo().toBbox());
+        if (!StringUtils.isEmpty(param.getBbox())) {
+            requestParams.add("bbox", param.getBbox());
         }
         if (!StringUtils.isEmpty(param.getMf_selector())) {
             requestParams.add("mf_selector", param.getMf_selector());
@@ -168,6 +169,9 @@ public class FindFaceImpl implements FindFaceService {
         logger.info("【identify result】 :" + result);
         if (responseCode == 200) {
 //            return JSONObject.parseObject(result, IdentifyPojo.class);
+            /*if(!result.contains("confidence")){
+                return null;
+            }*/
             return gson.fromJson(result,IdentifyPojo.class);
         }else{
             throw new BussinessException(responseCode,"【identify】请求发生错误");

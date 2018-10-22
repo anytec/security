@@ -35,6 +35,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -111,7 +114,7 @@ public class FRDataHandler {
                     logger.info("【addFace】图片入sdk库成功");
                     faceList.forEach(face -> {
                         handleSnapshot(face, timeModel, camera);
-                        IdentifyPojo identifyPojo = identifyInStaticGallery(face.getThumbnail());
+                        IdentifyPojo identifyPojo = identifyInStaticGallery(photo,face.getBbox());
                         if (identifyPojo != null) {
                             handleWarningSnap(identifyPojo,face, timeModel, camera);
                         }
@@ -133,15 +136,15 @@ public class FRDataHandler {
         long nowTimestamp = System.currentTimeMillis();
         long timestamp = timeModel.getTimestamp();
         if(timestamp > nowTimestamp){
-            if((timestamp - nowTimestamp)/(1000*60) <15){
+            if((timestamp - nowTimestamp)/(1000*60) <30){
                 return true;
             }
-            logger.info("【receiveSnap】快照传入时间{},大于当前时间15分钟，快照不录入",timeModel.getCatchTime());
+            logger.info("【receiveSnap】快照传入时间{},大于当前时间30分钟，快照不录入",timeModel.getCatchTime());
         }else if(timestamp <= nowTimestamp){
-            if((nowTimestamp - timestamp)/(1000*60) <15){
+            if((nowTimestamp - timestamp)/(1000*60) <30){
                 return true;
             }
-            logger.info("【receiveSnap】快照传入时间{},小于当前时间15分钟，快照不录入",timeModel.getCatchTime());
+            logger.info("【receiveSnap】快照传入时间{},小于当前时间30分钟，快照不录入",timeModel.getCatchTime());
         }
         return false;
     }
@@ -229,7 +232,7 @@ public class FRDataHandler {
 
 
     //在静态库中identify
-    public IdentifyPojo identifyInStaticGallery(String faceUrl) {
+    public IdentifyPojo identifyInStaticGallery(MultipartFile photo, String bbox) {
         IdentifyPojo identifyPojo = null;
         FindFaceParam param = new FindFaceParam();
         Object thresholdObj = redisTemplate.opsForValue().get(warningThreshold);
@@ -239,12 +242,16 @@ public class FRDataHandler {
             param.setThreshold(config.getWarningThreshold());
         }
         param.setGalleries(new String[]{config.getStaticGallery()});
-        param.setPhotoUrl(faceUrl);
+        param.setBbox(bbox);
         param.setSdkIp(config.getStaticSdkIp());
         param.setSdkPort(config.getStaticSdkPort());
         param.setSdkVersion(config.getStaticSdkVersion());
         param.setSdkToken(config.getStaticSdkToken());
-        identifyPojo = findFaceService.imageIdentify(null, param);
+        try{
+            identifyPojo = findFaceService.imageIdentify(photo.getBytes(), param);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
         return identifyPojo;
     }
 

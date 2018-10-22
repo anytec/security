@@ -70,11 +70,18 @@ public class GroupPersonServiceImpl implements GroupPersonService {
     }
 
     private void getPersonGroupNum(TbGroupPerson personGroup){
-        TbPersonExample example = new TbPersonExample();
-        TbPersonExample.Criteria c = example.createCriteria();
-        c.andGroupIdEqualTo(personGroup.getId());
-        Integer count = personMapper.countByExample(example);
-        personGroup.setTotalNumber(count);
+        String groupId = personGroup.getId().toString();
+        if(redisTemplate.opsForHash().hasKey(RedisConst.PERSON_GROUP_NUM_BY_GROUPID,groupId)){
+            Integer count = Integer.parseInt(redisTemplate.opsForHash().get(RedisConst.PERSON_GROUP_NUM_BY_GROUPID,groupId).toString());
+            personGroup.setTotalNumber(count);
+        }else {
+            TbPersonExample example = new TbPersonExample();
+            TbPersonExample.Criteria c = example.createCriteria();
+            c.andGroupIdEqualTo(personGroup.getId());
+            Integer count = personMapper.countByExample(example);
+            personGroup.setTotalNumber(count);
+            redisTemplate.opsForHash().put(RedisConst.PERSON_GROUP_NUM_BY_GROUPID,groupId,count.toString());
+        }
     }
 
     @Override
