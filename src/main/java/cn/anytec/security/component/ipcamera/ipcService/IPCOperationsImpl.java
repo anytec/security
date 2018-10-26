@@ -199,11 +199,21 @@ public class IPCOperationsImpl implements IPCOperations {
     }
 
     public ServerResponse getCaptureCameras(){
+        List<TbCamera> cameraList = cameraService.allList();
         List<String> macList = new ArrayList<>();
         Map<String,String> result = redisTemplate.opsForHash().entries(captureCameras);
-        result.forEach((mac,ip)->{
-            macList.add(mac);
-        });
+            result.forEach((mac,ip)->{
+                boolean flag = true;
+                for(TbCamera camera : cameraList){
+                    if(camera.getSdkId().equals(mac)){
+                        flag = false;
+                        break;
+                    }
+                }
+                if(flag){
+                    macList.add(mac);
+                }
+            });
         return ServerResponse.createBySuccess(macList);
     }
 

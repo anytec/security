@@ -1,5 +1,6 @@
 package cn.anytec.security.model.websocketmodel;
 
+import java.util.Date;
 import java.util.List;
 
 public class FdSnapShot {

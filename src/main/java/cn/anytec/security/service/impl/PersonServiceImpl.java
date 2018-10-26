@@ -94,8 +94,13 @@ public class PersonServiceImpl implements PersonService {
         if(facePojo != null){
             TbPerson person = parsePersonDTO(personForm, facePojo);
             if (addMySqlFace(person)) {
+                if(redisTemplate.opsForHash().hasKey(RedisConst.PERSON_GROUP_NUM_BY_GROUPID,person.getGroupId().toString())){
+                    redisTemplate.opsForHash().delete(RedisConst.PERSON_GROUP_NUM_BY_GROUPID,person.getGroupId().toString());
+                }
                 return ServerResponse.createBySuccess("添加person成功", person);
             }
+        }else {
+            return ServerResponse.createByErrorMessage("图片未检测到人脸");
         }
         return ServerResponse.createByErrorMessage("添加person失败");
     }
@@ -133,12 +138,14 @@ public class PersonServiceImpl implements PersonService {
         for (String sdkId : sdkIdList) {
             if (!StringUtils.isEmpty(sdkId)) {
                 if (deleteSdkFace(sdkId) && deleteMysqlFace(sdkId)) {
+                    deleteRedisFace(sdkId);
                 }else {
                     result =false;
                 }
             }
         }
         if(result){
+            redisTemplate.delete(RedisConst.PERSON_GROUP_NUM_BY_GROUPID);
             return ServerResponse.createBySuccess();
         }else {
             return ServerResponse.createByError();
@@ -154,11 +161,18 @@ public class PersonServiceImpl implements PersonService {
             logger.info("删除mysql中的face成功");
             return true;
         }
+        logger.info("删除mysql中的face失败");
         return false;
     }
 
     public boolean deleteSdkFace(String sdkId) {
         return findFaceService.deleteFace(sdkId);
+    }
+    public void deleteRedisFace(String sdkId) {
+        if(redisTemplate.opsForHash().hasKey(RedisConst.PERSON_BY_SDKID,sdkId)){
+            redisTemplate.opsForHash().delete(RedisConst.PERSON_BY_SDKID,sdkId);
+            logger.info("【deleteRedisPerson】{}",sdkId);
+        }
     }
 
     public ServerResponse<TbPerson> update(PersonForm personForm) {
@@ -179,18 +193,10 @@ public class PersonServiceImpl implements PersonService {
         TbPerson person = parsePersonDTO(personForm, facePojo);
         if(updateMysqlFace(person)){
             TbPerson tbPerson = personMapper.selectByPrimaryKey(person.getId());
-            removeRedisPerson(tbPerson);
+            deleteRedisFace(tbPerson.getSdkId());
             return ServerResponse.createBySuccessMessage("更新person信息成功");
         }
         return ServerResponse.createByErrorMessage("更新person信息失败");
-    }
-
-    private void removeRedisPerson(TbPerson tbPerson){
-        String redisKey = RedisConst.PERSON_BY_SDKID;
-        String personSdkId = tbPerson.getSdkId();
-        if (redisTemplate.opsForHash().hasKey(redisKey, personSdkId)) {
-            redisTemplate.opsForHash().delete(redisKey,personSdkId);
-        }
     }
 
     public boolean updateMysqlFace(TbPerson person) {
@@ -241,7 +247,7 @@ public class PersonServiceImpl implements PersonService {
         if (!StringUtils.isEmpty(person.getSdkId())) {
             c.andSdkIdEqualTo(person.getSdkId());
         }
-        example.setOrderByClause("enroll_time desc");
+        example.setOrderByClause("id desc");
         List<TbPerson> personList = personMapper.selectByExample(example);
         PageInfo pageResult = new PageInfo(personList);
         List<PersonDTO> personDTOList = personList.stream()
@@ -258,6 +264,25 @@ public class PersonServiceImpl implements PersonService {
         TbGroupPerson personGroup = groupPersonService.getGroupPersonById(person.getGroupId().toString()).getData();
         personDTO.setGroupName(personGroup.getName());
         return personDTO;
+    }
+
+    @Override
+    public List<PersonDTO> personListConvertPersonDTOList(List<TbPerson> personList) {
+        List<TbGroupPerson> personGroupList = groupPersonService.allList();
+        List<PersonDTO> personDTOList = new ArrayList<>();
+        if(personGroupList.size()>0 && personList.size()>0){
+            for(TbPerson person : personList){
+                for(TbGroupPerson personGroup : personGroupList){
+                    if(person.getGroupId().equals(personGroup.getId())){
+                        PersonDTO personDTO = new PersonDTO();
+                        BeanUtils.copyProperties(person, personDTO);
+                        personDTO.setGroupName(personGroup.getName());
+                        personDTOList.add(personDTO);
+                    }
+                }
+            }
+        }
+        return personDTOList;
     }
 
     /**
@@ -394,10 +419,9 @@ public class PersonServiceImpl implements PersonService {
                     }else {
                         msg += personName+",";
                     }
-                    continue;
                 }
-
             }
+            redisTemplate.delete(RedisConst.PERSON_GROUP_NUM_BY_GROUPID);
         }
         if(!StringUtils.isEmpty(msg)){
             return ServerResponse.createBySuccessMessage("上传不成功的照片： "+msg);

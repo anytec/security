@@ -39,7 +39,7 @@ public class FaceInfo{
         return y2;
     }
 
-    public String toBbox(){
+    public String getBbox(){
         return "[["+x1+","+y1+","+x2+","+y2+"]]";
     }
 

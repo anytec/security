@@ -50,7 +50,7 @@ public class MainController {
         if (photo != null) {
             frDataHandler.recieveSnap(cam_id,timestamp,bbox,photo);
         }else {
-            logger.info("recieveSnap接收的人脸图片为空！");
+            logger.info("【recieveSnap】接收的人脸图片为空！");
         }
     }
 

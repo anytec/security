@@ -50,8 +50,7 @@ public class CameraServiceImpl implements CameraService {
 
     @Value("${camera.rtmpPrefix}")
     private String rtmpPrefix;
-    private String captureCameras = RedisConst.CAPTURECAMERAS;
-    private String captureCamerasInUse = RedisConst.CAPTURECAMERAS_INUSE;
+    private String captureCamerasOffline = RedisConst.CAPTURECAMERAS_OFFLINE;
 
     public TbCamera getCameraById(Integer cameraId) {
         TbCamera camera = cameraMapper.selectByPrimaryKey(cameraId);
@@ -59,7 +58,6 @@ public class CameraServiceImpl implements CameraService {
         return camera;
     }
 
-    //添加摄像头
     public ServerResponse<String> add(TbCamera camera) {
         if (camera != null) {
             String cameraSdkId = camera.getSdkId();
@@ -82,22 +80,19 @@ public class CameraServiceImpl implements CameraService {
     }
 
     public ServerResponse delete(String cameraSdkIds) {
-        String cameraBySdkId = RedisConst.CAMERA_BY_SDKID;
         List<String> cameraSdkIdList = Splitter.on(",").splitToList(cameraSdkIds);
         List<TbCamera> cameraList = cameraMapper.selectInCameraSdkIds(cameraSdkIdList);
         for (String cameraSdkId : cameraSdkIdList) {
             for (TbCamera camera : cameraList) {
                 if (camera.getSdkId().equals(cameraSdkId)) {
-                    //删除redis里的camera
-                    if (redisTemplate.opsForHash().hasKey(cameraBySdkId, cameraSdkId)) {
-                        redisTemplate.opsForHash().delete(cameraBySdkId, cameraSdkId);
-                    }
+                    deleteRedisCamera(cameraSdkId);
                     deleteMysqlCamera(cameraSdkId);
                     if (camera.getCameraType().equals(CameraType.CaptureCamera.getMsg())) {
                         //删除redis里的抓拍机
                         String ipAddress = ipcOperations.getIpAddress(cameraSdkId);
                         ipcOperations.deleteFromInUseCache(cameraSdkId);
                         ipcOperations.deleteFromCache(cameraSdkId);
+                        ipcOperations.deleteFromOfflineCache(cameraSdkId);
                         try {
                             ipcOperations.invalidCaptureCamera(cameraSdkId,ipAddress);
                         }catch (Exception e){
@@ -146,6 +141,14 @@ public class CameraServiceImpl implements CameraService {
     }
 
     @Override
+    public List<TbCamera> allList() {
+        TbCameraExample example = new TbCameraExample();
+        TbCameraExample.Criteria c = example.createCriteria();
+        List<TbCamera> cameraList = cameraMapper.selectByExample(example);
+        return cameraList;
+    }
+
+    @Override
     public CameraDTO cameraConvertToCameraDTO(TbCamera camera) {
         CameraDTO cameraDTO = new CameraDTO();
         BeanUtils.copyProperties(camera, cameraDTO);
@@ -157,43 +160,56 @@ public class CameraServiceImpl implements CameraService {
     public ServerResponse<TbCamera> update(TbCamera camera) {
         TbCamera cam = getById(camera.getId());
         String cameraSdkId = cam.getSdkId();
+        String newCameraSdkId = camera.getSdkId();
+        //抓拍机的处理
         if (cam.getCameraType().equals(CameraType.CaptureCamera.getMsg())) {
-            if(!StringUtils.isEmpty(camera.getSdkId()) && !cameraSdkId.equals(camera.getSdkId())){
-                cameraSdkId = camera.getSdkId();
-                if (camera.getCameraStatus() == 0) {
-                    ipcOperations.standbyCaptureCamera(cameraSdkId);
-                } else if (camera.getCameraStatus() == 1) {
-                    ipcOperations.activeCaptureCamera(cameraSdkId);
-                    ipcOperations.addToInUseCache(cameraSdkId);
-                    ipcOperations.deleteFromCache(cameraSdkId);
-                }
+            if(redisTemplate.opsForHash().hasKey(captureCamerasOffline,cameraSdkId)){
+                return ServerResponse.createByErrorMessage("设备 "+cameraSdkId+" 不在线,不支持修改！");
             }else {
-                if (camera.getCameraStatus() == 0) {
-                    ipcOperations.standbyCaptureCamera(cam.getSdkId());
-                    ipcOperations.addToCache(cam.getSdkId());
-                    ipcOperations.deleteFromInUseCache(cam.getSdkId());
-                } else if (camera.getCameraStatus() == 1) {
-                    ipcOperations.activeCaptureCamera(cam.getSdkId());
-                    ipcOperations.addToInUseCache(cam.getSdkId());
-                    ipcOperations.deleteFromCache(cam.getSdkId());
+                if(camera.getCameraStatus() != null){
+                    //cameraSdkId发生变化
+                    if(!StringUtils.isEmpty(newCameraSdkId) && !cameraSdkId.equals(newCameraSdkId)){
+                        //处理旧的cameraSdkId的状态
+                        ipcOperations.standbyCaptureCamera(cameraSdkId);
+                        ipcOperations.addToCache(cameraSdkId);
+                        ipcOperations.deleteFromInUseCache(cameraSdkId);
+                        //处理新的cameraSdkId的状态
+                        if (camera.getCameraStatus() == 0) {
+                            ipcOperations.standbyCaptureCamera(newCameraSdkId);
+                        } else if (camera.getCameraStatus() == 1) {
+                            ipcOperations.activeCaptureCamera(newCameraSdkId);
+                            ipcOperations.addToInUseCache(newCameraSdkId);
+                            ipcOperations.deleteFromCache(newCameraSdkId);
+                        }
+                    }else {
+                        //cameraSdkId没有发生变化
+                        if (camera.getCameraStatus() == 0) {
+                            ipcOperations.standbyCaptureCamera(cameraSdkId);
+                            ipcOperations.addToCache(cameraSdkId);
+                            ipcOperations.deleteFromInUseCache(cameraSdkId);
+                        } else if (camera.getCameraStatus() == 1) {
+                            ipcOperations.activeCaptureCamera(cameraSdkId);
+                            ipcOperations.addToInUseCache(cameraSdkId);
+                            ipcOperations.deleteFromCache(cameraSdkId);
+                        }
+                    }
                 }
             }
-
         }
         int updateCount = cameraMapper.updateByPrimaryKeySelective(camera);
         if (updateCount > 0) {
             TbCamera tbCamera = cameraMapper.selectByPrimaryKey(camera.getId());
-            removeRedisCamera(tbCamera);
+            deleteRedisCamera(tbCamera.getSdkId());
             return ServerResponse.createBySuccess("更新camera信息成功", camera);
         }
         return ServerResponse.createByErrorMessage("更新camera信息失败");
     }
 
-    private void removeRedisCamera(TbCamera camera) {
+    private void deleteRedisCamera(String cameraSdkId) {
         String redisKey = RedisConst.CAMERA_BY_SDKID;
-        String cameraSdkId = camera.getSdkId();
         if (redisTemplate.opsForHash().hasKey(redisKey, cameraSdkId)) {
             redisTemplate.opsForHash().delete(redisKey, cameraSdkId);
+            logger.info("【deleteRedisCamera】{}",cameraSdkId);
         }
     }
 
@@ -212,11 +228,14 @@ public class CameraServiceImpl implements CameraService {
             TbCamera camera = cameraList.get(0);
             redisTemplate.opsForHash().put(redisKey, sdkId, JSONObject.toJSONString(camera));
             redisTemplate.expire(redisKey, 1, TimeUnit.DAYS);
+            logger.info("【getCameraBySdkId put】{}",camera.getSdkId());
             return camera;
         }
         return null;
     }
 
+    @Override
+    /**fkvideo detector获取在线的视频流摄像机*/
     public String cameras() {
         TbCameraExample example = new TbCameraExample();
         example.createCriteria().andCameraStatusEqualTo(1).andCameraTypeEqualTo(CameraType.VideoStreamCamera.getMsg());
@@ -292,6 +311,7 @@ public class CameraServiceImpl implements CameraService {
     }
 
     @Override
+    /**检验抓拍机名称是否存在*/
     public boolean isCameraNameExist(String cameraName) {
         TbCameraExample example = new TbCameraExample();
         TbCameraExample.Criteria c = example.createCriteria();
@@ -304,6 +324,7 @@ public class CameraServiceImpl implements CameraService {
     }
 
     @Override
+    /**修改离线抓拍机的状态*/
     public void changeOfflineCameraStatus(String cameraSdkId, Integer status) {
         TbCamera camera = getCameraBySdkId(cameraSdkId);
         if (camera != null) {
@@ -312,7 +333,7 @@ public class CameraServiceImpl implements CameraService {
                 int updateCount = cameraMapper.updateByPrimaryKeySelective(camera);
                 if (updateCount > 0) {
                     TbCamera tbCamera = cameraMapper.selectByPrimaryKey(camera.getId());
-                    removeRedisCamera(tbCamera);
+                    deleteRedisCamera(tbCamera.getSdkId());
                 }
             }
         }

@@ -9,6 +9,7 @@ import java.util.Date;
 public class TimeModel {
     private long timestamp;
     private String catchTime;
+    private Date date;
     private int dayOfWeek;
     private int hour;
     private int minute;
@@ -23,6 +24,7 @@ public class TimeModel {
         this.minute = zonedDateTime.getMinute();
         this.timestamp = timestamp;
         this.catchTime = format.format(timestamp);
+        this.date = Date.from(zonedDateTime.toInstant());
     }
 
     public long getTimestamp() {
@@ -68,5 +70,13 @@ public class TimeModel {
 
     public void setMinute(int minute) {
         this.minute = minute;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public void setDate(Date date) {
+        this.date = date;
     }
 }

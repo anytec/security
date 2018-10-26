@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @EnableScheduling
@@ -45,25 +46,27 @@ public class CameraStreamMonitor {
         //获取redis中实际运行的Process记录
         HashMap<String, String> monitorMap = (HashMap) redisTemplate.opsForHash().entries(allProcessLabel);
         //获取本实例跑的进程记录
-        Set<String> streamProcessSetRedis = (HashSet) redisTemplate.opsForSet().members(serverLabel);
+//        Set<String> streamProcessSetRedis = (HashSet) redisTemplate.opsForSet().members(serverLabel);
         monitorMap.forEach((k,v)->{
             //判断redis中记录单个camera的连接数，小于等于0时，则认为没有前端流连接，清除本实例中维护的Process进程。
             if(Integer.parseInt(v)<=0){
                 //清理redis中的总活动camrea和单实例camera中的该camera记录。
-                redisTemplate.opsForSet().remove(serverLabel,k);
-                redisTemplate.opsForHash().delete(allProcessLabel,k);
-                logger.info("无回显连接,停止rtmp服务："+k);
-                if(!streamProcessLocal.keySet().contains(k)){
+//                logger.info("无回显连接,停止rtmp服务："+k);
+                if(streamProcessLocal.keySet().contains(k)){
+                    logger.info("begin to clear process for:"+k);
                     FFmpegStreamTask task = streamProcessLocal.get(k);
-                    if(task.isAlive()){
+                    if(null!=task||task.getExistValue()==null){
                         streamProcessLocal.get(k).destory();
                         //wsSendHandler.sendUnsubscribe(k);
                     }
                 }
+                logger.info("begin to clear redis label for:"+k);
+                redisTemplate.opsForSet().remove(serverLabel,k);
+                redisTemplate.opsForHash().delete(allProcessLabel,k);
             }else {
                 if (streamProcessLocal.keySet().contains(k)) {
                     FFmpegStreamTask task = streamProcessLocal.get(k);
-                    if (!task.isAlive()) {
+                    if (!task.isAlive()&&task.getExistValue()!=null) {
                         String[] cmds = task.getCmds();
                         FFmpegStreamTask newTask = new FFmpegStreamTask(cmds);
                         newTask.setDaemon(true);
@@ -131,7 +134,6 @@ public class CameraStreamMonitor {
             return "error";
         }
         //判断本实例和所有实例里是否有该转发进程在跑，如果没有则重新启动，如果有则检查进程状态，非激活状态则重新启动
-        redisTemplate.opsForSet().add(serverLabel, camera.getSdkId());
         Map<String,String> allProcessLabelmap = redisTemplate.opsForHash().entries(allProcessLabel);
         String count = allProcessLabelmap.get(camera.getSdkId());
         if (count == null) {
@@ -155,6 +157,7 @@ public class CameraStreamMonitor {
                     return "error";
                 }
             }
+            redisTemplate.opsForSet().add(serverLabel, camera.getSdkId());
             redisTemplate.opsForHash().put(allProcessLabel, camera.getSdkId(), "1");
             streamProcessLocal.put(camera.getSdkId(), task);
             return "success";
@@ -182,13 +185,28 @@ public class CameraStreamMonitor {
         String rtmp = rtmpPrefix+camera.getSdkId();
         String[] cmds = new String[]{"/usr/bin/ffmpeg", "-loglevel","quiet","-i", rtsp, "-c", "copy", "-f", "flv", "-an", rtmp};
         FFmpegStreamTask fFmpegStreamTask = streamProcessLocal.get(camera.getSdkId());
-        if(null == fFmpegStreamTask || !fFmpegStreamTask.isActive()){
+        //判断进程是不是在阻塞状态，阻塞状态没有退出值，如果有阻塞则表示推流正常进行
+        if(null == fFmpegStreamTask || fFmpegStreamTask.getExistValue() !=null){
             logger.info("local app can not find push stream process ,starting for cmds :{}",Arrays.toString(cmds));
             FFmpegStreamTask task = new FFmpegStreamTask(cmds);
             task.setDaemon(true);
             task.start();
-            streamProcessLocal.put(camera.getSdkId(), task);
-            redisTemplate.opsForSet().add(serverLabel,camera.getSdkId());
+            if(task.getExistValue()!=null){
+                logger.error("thread for {} start fail for" +camera.getSdkId());
+                return false;
+            }else {
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    logger.error(e.getMessage());
+                    logger.error("thread start fail");
+                }
+                if(task.getExistValue()==null){
+                    streamProcessLocal.put(camera.getSdkId(), task);
+                    redisTemplate.opsForSet().add(serverLabel, camera.getSdkId());
+                    return true;
+                }
+            }
         }
 //        if(addFlag){
 //            redisTemplate.opsForHash().increment(allProcessLabel, camera.getSdkId(), 1);

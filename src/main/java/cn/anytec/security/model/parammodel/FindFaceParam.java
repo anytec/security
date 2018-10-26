@@ -1,6 +1,7 @@
 package cn.anytec.security.model.parammodel;
 
 import cn.anytec.security.findface.model.FaceInfo;
+import org.springframework.web.multipart.MultipartFile;
 
 public class FindFaceParam {
     private String meta;
@@ -17,6 +18,8 @@ public class FindFaceParam {
     private String sdkPort;
     private String sdkVersion;
     private String sdkToken;
+    private MultipartFile photo;
+
 
     public Integer getN() {
         return n;
@@ -128,5 +131,13 @@ public class FindFaceParam {
 
     public void setSdkToken(String sdkToken) {
         this.sdkToken = sdkToken;
+    }
+
+    public MultipartFile getPhoto() {
+        return photo;
+    }
+
+    public void setPhoto(MultipartFile photo) {
+        this.photo = photo;
     }
 }

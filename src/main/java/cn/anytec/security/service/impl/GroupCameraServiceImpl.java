@@ -2,9 +2,12 @@ package cn.anytec.security.service.impl;
 
 import cn.anytec.security.common.ResponseCode;
 import cn.anytec.security.common.ServerResponse;
+import cn.anytec.security.component.ipcamera.ipcService.IPCOperations;
 import cn.anytec.security.component.mongo.MongoDBService;
 import cn.anytec.security.config.GeneralConfig;
 import cn.anytec.security.constant.RedisConst;
+import cn.anytec.security.core.enums.CameraType;
+import cn.anytec.security.core.exception.BussinessException;
 import cn.anytec.security.core.log.LogObjectHolder;
 import cn.anytec.security.dao.TbCameraMapper;
 import cn.anytec.security.dao.TbGroupCameraMapper;
@@ -18,6 +21,8 @@ import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.google.common.base.Splitter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -32,6 +37,9 @@ import java.util.Map;
 
 @Service("GroupCameraService")
 public class GroupCameraServiceImpl implements GroupCameraService {
+
+    private final Logger logger = LoggerFactory.getLogger(GroupCameraServiceImpl.class);
+
     @Autowired
     private TbGroupCameraMapper groupCameraMapper;
     @Autowired
@@ -40,6 +48,8 @@ public class GroupCameraServiceImpl implements GroupCameraService {
     private RedisTemplate redisTemplate;
     @Autowired
     private MongoDBService mongoDBService;
+    @Autowired
+    private IPCOperations ipcOperations;
 
     public TbGroupCamera getCameraGroupInfo(Integer cameraGroupId) {
         TbGroupCamera cameraGroup = groupCameraMapper.selectByPrimaryKey(cameraGroupId);
@@ -87,39 +97,103 @@ public class GroupCameraServiceImpl implements GroupCameraService {
         }
         for (String cameraGroupId : groupCameraIdList) {
             if (!StringUtils.isEmpty(cameraGroupId)) {
-                TbCameraExample cameraExample = new TbCameraExample();
-                TbCameraExample.Criteria camC = cameraExample.createCriteria();
-                camC.andGroupIdEqualTo(Integer.parseInt(cameraGroupId));
-                List<TbCamera> camList = cameraMapper.selectByExample(cameraExample);
+                List<TbCamera> camList = getCameraListByGroupId(cameraGroupId);
                 if (camList.size() > 0) {
-                    TbCamera camera = camList.get(0);
-                    Integer groupId = camera.getGroupId();
-                    return ServerResponse.createByErrorMessage("设备组里还有设备成员,不能删除设备组: " + groupId);
+                    return ServerResponse.createByErrorMessage("设备组里还有设备成员,不能删除设备组");
                 }
                 TbGroupCameraExample groupExample = new TbGroupCameraExample();
                 TbGroupCameraExample.Criteria groupC = groupExample.createCriteria();
                 groupC.andIdEqualTo(Integer.parseInt(cameraGroupId));
                 groupCameraMapper.deleteByExample(groupExample);
+                logger.info("【deleteMysqlCameraGroup】{}",cameraGroupId);
+
+                deleteRedisCameraGroup(cameraGroupId);
             }
         }
         return ServerResponse.createBySuccess();
     }
 
+    private List<TbCamera> getCameraListByGroupId(String cameraGroupId) {
+        TbCameraExample cameraExample = new TbCameraExample();
+        TbCameraExample.Criteria camC = cameraExample.createCriteria();
+        camC.andGroupIdEqualTo(Integer.parseInt(cameraGroupId));
+        return cameraMapper.selectByExample(cameraExample);
+    }
+
     public ServerResponse<TbGroupCamera> update(TbGroupCamera groupCamera) {
+        //设备组状态改变，改变组里的设备状态
+        if(groupCamera.getGroupStatus() != null){
+            String cameraGroupId = groupCamera.getId().toString();
+            List<TbCamera> camList = getCameraListByGroupId(cameraGroupId);
+            if(camList.size()>0){
+                for(TbCamera camera : camList){
+                    String cameraSdkId = camera.getSdkId();
+                    if(groupCamera.getGroupStatus() == 0){
+                        if(camera.getCameraStatus() == 1){
+                            if(camera.getCameraType().equals(CameraType.CaptureCamera.getMsg())){
+                                if(!StringUtils.isEmpty(cameraSdkId)){
+                                    try {
+                                        ipcOperations.standbyCaptureCamera(cameraSdkId);
+                                    }catch (Exception e){
+                                        continue;
+                                    }
+                                    ipcOperations.addToCache(cameraSdkId);
+                                    ipcOperations.deleteFromInUseCache(cameraSdkId);
+                                    camera.setCameraStatus(0);
+                                }
+                            }else {
+                                camera.setCameraStatus(0);
+                            }
+                        }else {
+                            continue;
+                        }
+                    }else if(groupCamera.getGroupStatus() == 1){
+                        if(camera.getCameraStatus() == 0){
+                            if(camera.getCameraType().equals(CameraType.CaptureCamera.getMsg())){
+                                if(!StringUtils.isEmpty(cameraSdkId)){
+                                    try {
+                                        ipcOperations.activeCaptureCamera(cameraSdkId);
+                                    }catch (Exception e){
+                                        continue;
+                                    }
+                                    ipcOperations.addToInUseCache(cameraSdkId);
+                                    ipcOperations.deleteFromCache(cameraSdkId);
+                                    camera.setCameraStatus(1);
+                                }
+                            }else {
+                                camera.setCameraStatus(1);
+                            }
+                        }else {
+                            continue;
+                        }
+                    }
+                    //更新mysql中设备信息
+                    int updateCount = cameraMapper.updateByPrimaryKeySelective(camera);
+                    if (updateCount > 0) {
+                        //删除redis里的缓存
+                        String redisKey = RedisConst.CAMERA_BY_SDKID;
+                        if (redisTemplate.opsForHash().hasKey(redisKey, cameraSdkId)) {
+                            redisTemplate.opsForHash().delete(redisKey, cameraSdkId);
+                            logger.info("【deleteRedisCamera】{}",cameraSdkId);
+                        }
+                    }
+                }
+            }
+        }
         int updateCount = groupCameraMapper.updateByPrimaryKeySelective(groupCamera);
         if (updateCount > 0) {
             TbGroupCamera camGroup = groupCameraMapper.selectByPrimaryKey(groupCamera.getId());
-            removeRedisCameraGroup(camGroup);
+            deleteRedisCameraGroup(camGroup.getId().toString());
             return ServerResponse.createBySuccess("更新groupCamera信息成功", groupCamera);
         }
         return ServerResponse.createByErrorMessage("更新groupCamera信息失败");
     }
 
-    private void removeRedisCameraGroup(TbGroupCamera camGroup) {
+    private void deleteRedisCameraGroup(String camGroupId) {
         String redisKey = RedisConst.CAMERAGROUP_BY_ID;
-        String camGroupId = camGroup.getId().toString();
         if (redisTemplate.opsForHash().hasKey(redisKey, camGroupId)) {
             redisTemplate.opsForHash().delete(redisKey, camGroupId);
+            logger.info("【deleteRedisCameraGroup】{}",camGroupId);
         }
     }
 

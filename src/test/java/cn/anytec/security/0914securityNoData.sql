@@ -131,7 +131,7 @@ CREATE TABLE `tb_person` (
   `id_number` varchar(64) DEFAULT NULL,
   `sdk_id` varchar(64) DEFAULT NULL,
   `gender` varchar(2) DEFAULT '',
-  `enroll_time` datetime DEFAULT NULL,
+  `CAPTURECAMERAS_OFFLINE` datetime DEFAULT NULL,
   `normalized` varchar(128) DEFAULT NULL,
   `thumbnail` varchar(128) DEFAULT NULL,
   `photo` varchar(128) DEFAULT NULL,

@@ -8,6 +8,7 @@
     <result column="remarks" property="remarks" jdbcType="VARCHAR" />
     <result column="total_number" property="totalNumber" jdbcType="INTEGER" />
     <result column="voice_label" property="voiceLabel" jdbcType="VARCHAR" />
+    <result column="warnning_push" property="warnningPush" jdbcType="INTEGER" />
   </resultMap>
   <sql id="Example_Where_Clause" >
     <where >
@@ -68,7 +69,7 @@
     </where>
   </sql>
   <sql id="Base_Column_List" >
-    id, name, color_label, remarks, total_number, voice_label
+    id, name, color_label, remarks, total_number, voice_label, warnning_push
   </sql>
   <select id="selectByExample" resultMap="BaseResultMap" parameterType="cn.anytec.security.model.TbGroupPersonExample" >
     select
@@ -102,11 +103,11 @@
   </delete>
   <insert id="insert" parameterType="cn.anytec.security.model.TbGroupPerson" >
     insert into tb_group_person (id, name, color_label, 
-      remarks, total_number, voice_label
-      )
+      remarks, total_number, voice_label, 
+      warnning_push)
     values (#{id,jdbcType=INTEGER}, #{name,jdbcType=VARCHAR}, #{colorLabel,jdbcType=VARCHAR}, 
-      #{remarks,jdbcType=VARCHAR}, #{totalNumber,jdbcType=INTEGER}, #{voiceLabel,jdbcType=VARCHAR}
-      )
+      #{remarks,jdbcType=VARCHAR}, #{totalNumber,jdbcType=INTEGER}, #{voiceLabel,jdbcType=VARCHAR}, 
+      #{warnningPush,jdbcType=INTEGER})
   </insert>
   <insert id="insertSelective" parameterType="cn.anytec.security.model.TbGroupPerson" >
     insert into tb_group_person
@@ -129,6 +130,9 @@
       <if test="voiceLabel != null" >
         voice_label,
       </if>
+      <if test="warnningPush != null" >
+        warnning_push,
+      </if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides="," >
       <if test="id != null" >
@@ -148,6 +152,9 @@
       </if>
       <if test="voiceLabel != null" >
         #{voiceLabel,jdbcType=VARCHAR},
+      </if>
+      <if test="warnningPush != null" >
+        #{warnningPush,jdbcType=INTEGER},
       </if>
     </trim>
   </insert>
@@ -178,6 +185,9 @@
       <if test="record.voiceLabel != null" >
         voice_label = #{record.voiceLabel,jdbcType=VARCHAR},
       </if>
+      <if test="record.warnningPush != null" >
+        warnning_push = #{record.warnningPush,jdbcType=INTEGER},
+      </if>
     </set>
     <if test="_parameter != null" >
       <include refid="Update_By_Example_Where_Clause" />
@@ -190,7 +200,8 @@
       color_label = #{record.colorLabel,jdbcType=VARCHAR},
       remarks = #{record.remarks,jdbcType=VARCHAR},
       total_number = #{record.totalNumber,jdbcType=INTEGER},
-      voice_label = #{record.voiceLabel,jdbcType=VARCHAR}
+      voice_label = #{record.voiceLabel,jdbcType=VARCHAR},
+      warnning_push = #{record.warnningPush,jdbcType=INTEGER}
     <if test="_parameter != null" >
       <include refid="Update_By_Example_Where_Clause" />
     </if>
@@ -213,6 +224,9 @@
       <if test="voiceLabel != null" >
         voice_label = #{voiceLabel,jdbcType=VARCHAR},
       </if>
+      <if test="warnningPush != null" >
+        warnning_push = #{warnningPush,jdbcType=INTEGER},
+      </if>
     </set>
     where id = #{id,jdbcType=INTEGER}
   </update>
@@ -222,7 +236,8 @@
       color_label = #{colorLabel,jdbcType=VARCHAR},
       remarks = #{remarks,jdbcType=VARCHAR},
       total_number = #{totalNumber,jdbcType=INTEGER},
-      voice_label = #{voiceLabel,jdbcType=VARCHAR}
+      voice_label = #{voiceLabel,jdbcType=VARCHAR},
+      warnning_push = #{warnningPush,jdbcType=INTEGER}
     where id = #{id,jdbcType=INTEGER}
   </update>
 </mapper>

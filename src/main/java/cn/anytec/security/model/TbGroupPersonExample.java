@@ -503,6 +503,66 @@ public class TbGroupPersonExample {
             addCriterion("voice_label not between", value1, value2, "voiceLabel");
             return (Criteria) this;
         }
+
+        public Criteria andWarnningPushIsNull() {
+            addCriterion("warnning_push is null");
+            return (Criteria) this;
+        }
+
+        public Criteria andWarnningPushIsNotNull() {
+            addCriterion("warnning_push is not null");
+            return (Criteria) this;
+        }
+
+        public Criteria andWarnningPushEqualTo(Integer value) {
+            addCriterion("warnning_push =", value, "warnningPush");
+            return (Criteria) this;
+        }
+
+        public Criteria andWarnningPushNotEqualTo(Integer value) {
+            addCriterion("warnning_push <>", value, "warnningPush");
+            return (Criteria) this;
+        }
+
+        public Criteria andWarnningPushGreaterThan(Integer value) {
+            addCriterion("warnning_push >", value, "warnningPush");
+            return (Criteria) this;
+        }
+
+        public Criteria andWarnningPushGreaterThanOrEqualTo(Integer value) {
+            addCriterion("warnning_push >=", value, "warnningPush");
+            return (Criteria) this;
+        }
+
+        public Criteria andWarnningPushLessThan(Integer value) {
+            addCriterion("warnning_push <", value, "warnningPush");
+            return (Criteria) this;
+        }
+
+        public Criteria andWarnningPushLessThanOrEqualTo(Integer value) {
+            addCriterion("warnning_push <=", value, "warnningPush");
+            return (Criteria) this;
+        }
+
+        public Criteria andWarnningPushIn(List<Integer> values) {
+            addCriterion("warnning_push in", values, "warnningPush");
+            return (Criteria) this;
+        }
+
+        public Criteria andWarnningPushNotIn(List<Integer> values) {
+            addCriterion("warnning_push not in", values, "warnningPush");
+            return (Criteria) this;
+        }
+
+        public Criteria andWarnningPushBetween(Integer value1, Integer value2) {
+            addCriterion("warnning_push between", value1, value2, "warnningPush");
+            return (Criteria) this;
+        }
+
+        public Criteria andWarnningPushNotBetween(Integer value1, Integer value2) {
+            addCriterion("warnning_push not between", value1, value2, "warnningPush");
+            return (Criteria) this;
+        }
     }
 
     public static class Criteria extends GeneratedCriteria {

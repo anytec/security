@@ -7,19 +7,6 @@ public class IdentifyFace{
     private String person_id;
     private double age;
     private String gender;
-
-    public void setFriend(boolean friend) {
-        this.friend = friend;
-    }
-
-    public void setGalleries(List<String> galleries) {
-        this.galleries = galleries;
-    }
-
-    public void setMeta(String meta) {
-        this.meta = meta;
-    }
-
     private List<String> emotions;
     private boolean friend;
     private List<String> galleries;
@@ -33,6 +20,18 @@ public class IdentifyFace{
     private int x2;
     private int y1;
     private int y2;
+
+    public void setFriend(boolean friend) {
+        this.friend = friend;
+    }
+
+    public void setGalleries(List<String> galleries) {
+        this.galleries = galleries;
+    }
+
+    public void setMeta(String meta) {
+        this.meta = meta;
+    }
 
     public String getId() {
         return id;
@@ -100,6 +99,10 @@ public class IdentifyFace{
 
     public int getY2() {
         return y2;
+    }
+
+    public String getBbox(){
+        return "[["+x1+","+y1+","+x2+","+y2+"]]";
     }
 
     public int getHeight(){
